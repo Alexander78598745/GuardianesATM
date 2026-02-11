@@ -27,7 +27,7 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= FUNCIONES A window (SOLUCIÓN) ================= */
+/* ================= EXPOSICIÓN DE FUNCIONES A HTML ================= */
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // CARGA DATOS
+    // CARGA DE DATOS
     const porterosRef = ref(db, 'porteros');
     onValue(porterosRef, (snapshot) => {
         const data = snapshot.val();
@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSession();
 });
 
+/* ================= SESIÓN ================= */
 function checkSession() {
     const session = JSON.parse(localStorage.getItem('guardianes_session'));
     if (session) {
@@ -315,7 +316,7 @@ function cargarSelectEDP() {
     if(select) { select.innerHTML = '<option value="">Asignar EDP...</option>' + edps.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join(''); }
 }
 
-/* ================= MODULO ENTRENADOR ================= */
+/* ================= EDP ================= */
 function renderEvaluacionList() {
     const div = document.getElementById('edp-lista-porteros');
     const misPorteros = porteros.filter(p => p.entrenador === currentUser.nombre);
@@ -335,12 +336,7 @@ function renderEvaluacionList() {
                 <i class="fas fa-chevron-down" style="color:var(--text-sec)"></i>
             </div>
             <div class="points-container">
-                <div class="category-block">
-                    <div class="chat-input-container">
-                        <input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Mensaje...">
-                        <button class="btn-chat-send" onclick="guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                </div>
+                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 2, 'men', 'Puntual')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
                     <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 2, 'men', 'Escucha')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
@@ -368,33 +364,40 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 2, 'ret', 'Mejora')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
                     <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 2, 'ret', 'MVP')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
                 </div></div>
+                
                 <div class="category-block" style="border:none;">
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
                         ${p.historial && p.historial.length > 0 
                             ? p.historial.slice(0, 5).map(h => `<div class="history-item"><span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span><span class="hist-action">${h.accion}</span><span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span></div>`).join('') 
-                            : '<div style="text-align:center; font-size:0.75rem; color:var(--text-sec);">Sin actividad.</div>'}
+                            : '<div style="text-align:center;font-size:0.75rem;color:var(--text-sec);">Sin actividad.</div>'}
                     </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        </div>`).join('');
 }
+
+function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
 
 function sumar(id, pts, statKey, accionNombre) {
     const p = porteros.find(x => x.id === id);
     if (!p) return;
     let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
     if(s[statKey] === undefined) s[statKey] = 60;
+    
+    // HISTORIAL
     let hist = p.historial || [];
     const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
     hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
     if(hist.length > 20) hist.pop();
-    update(ref(db, 'porteros/' + id), { puntos: (p.puntos || 0) + pts, stats: { ...s, [statKey]: s[statKey] + pts }, historial: hist })
-        .then(() => showToast(`+${pts} ${accionNombre}`));
+
+    update(ref(db, 'porteros/' + id), { 
+        puntos: (p.puntos || 0) + pts, 
+        stats: { ...s, [statKey]: s[statKey] + pts },
+        historial: hist 
+    }).then(() => showToast(`+${pts} ${accionNombre}`));
 }
 
-function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
 function guardarFeedback(id) {
     const input = document.getElementById(`feedback-input-${id}`);
     if(!input.value) return;
@@ -435,7 +438,7 @@ function renderDashboard(porteroId) {
     document.getElementById('progress-fill').style.width = Math.min(w, 100) + "%";
     document.getElementById('progress-fill').style.background = lvlColor;
     
-    // Insignias y Chart (código estándar)...
+    // Insignias y Chart...
     renderRadar(p);
 }
 
