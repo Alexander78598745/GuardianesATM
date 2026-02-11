@@ -1,7 +1,8 @@
-/* ================= CONFIGURACIÓN FIREBASE ================= */
+/* ================= IMPORTACIONES FIREBASE ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+/* ================= CONFIGURACIÓN ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyCcS3t28TaeqvaklYS0hlUNupFNRkBN8Bo",
   authDomain: "guardianes-atm.firebaseapp.com",
@@ -12,6 +13,7 @@ const firebaseConfig = {
   appId: "1:561012664887:web:54fa7726e9dcc84ba0edb2"
 };
 
+// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -25,12 +27,11 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= FUNCIONES GLOBALES (EXPORTS PARA HTML) ================= */
-// Necesario porque type="module" aisla el scope. Asignamos a window.
+/* ================= EXPOSICIÓN DE FUNCIONES (SOLUCIÓN A LOS BOTONES) ================= */
+// Esto hace que el HTML (onclick) pueda ver las funciones del módulo
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;
-window.confirmingLogin = confirmingLogin;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
 window.navPortero = navPortero;
@@ -46,29 +47,33 @@ window.sumar = sumar;
 window.guardarFeedback = guardarFeedback;
 window.togglePasswordVisibility = togglePasswordVisibility;
 
-/* ================= INICIO & LISTENERS ================= */
+/* ================= INICIO ================= */
 document.addEventListener('DOMContentLoaded', () => {
-    // Service Worker para PWA
+    // Service Worker
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
 
+    // Tema
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.body.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
     
-    // Enter en Login
+    // LISTENER ENTER PARA LOGIN (Corrección)
     const passInput = document.getElementById('modal-pass');
     if(passInput) {
-        passInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') confirmingLogin();
+        passInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                confirmarLogin();
+            }
         });
     }
 
-    // CARGA DE DATOS DESDE FIREBASE
+    // CARGA DE DATOS EN TIEMPO REAL
     const porterosRef = ref(db, 'porteros');
     onValue(porterosRef, (snapshot) => {
         const data = snapshot.val();
         porteros = data ? Object.values(data) : [];
-        refreshCurrentView(); // Actualizar vista en tiempo real
+        refreshCurrentView();
     });
 
     const edpsRef = ref(db, 'edps');
@@ -76,29 +81,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = snapshot.val();
         edps = data ? Object.values(data) : [];
         refreshCurrentView();
+        // Si no hay entrenadores, crear al admin por defecto si se desea, o dejar vacío.
     });
 
-    // RECUPERAR SESIÓN (PERSISTENCIA)
+    // RECUPERAR SESIÓN
     checkSession();
 });
 
-/* ================= LÓGICA DE SESIÓN ================= */
+/* ================= SESIÓN Y NAVEGACIÓN ================= */
 function checkSession() {
     const session = JSON.parse(localStorage.getItem('guardianes_session'));
     if (session) {
         roleType = session.role;
-        // Esperamos un poco a que carguen los datos de Firebase para asignar currentUser
+        // Pequeño delay para asegurar que los datos de Firebase han bajado
         setTimeout(() => {
             if (roleType === 'admin') {
                 navTo('view-admin');
             } else if (roleType === 'edp') {
-                currentUser = edps.find(e => e.id === session.id);
+                currentUser = edps.find(e => e.id == session.id);
                 if (currentUser) navTo('view-edp');
             } else if (roleType === 'portero') {
-                currentUser = porteros.find(p => p.id === session.id);
+                currentUser = porteros.find(p => p.id == session.id);
                 if (currentUser) navTo('view-portero');
             }
-        }, 800); // Pequeño delay para asegurar carga de DB
+        }, 1000);
     }
 }
 
@@ -111,21 +117,27 @@ function refreshCurrentView() {
     } else if (currentView.id === 'view-edp' && currentUser) {
         renderEvaluacionList();
     } else if (currentView.id === 'view-portero' && currentUser) {
-        // Actualizamos currentUser con los datos nuevos
-        currentUser = porteros.find(p => p.id === currentUser.id);
+        currentUser = porteros.find(p => p.id === currentUser.id); // Refrescar datos usuario actual
         if(currentUser) renderDashboard(currentUser.id);
     } else if (currentView.id === 'view-ranking') {
         renderRankingList();
     }
 }
 
-function abrirLogin(role) { roleType = role; document.getElementById('modal-login').style.display = 'flex'; document.getElementById('modal-pass').value = ''; document.getElementById('modal-pass').focus(); }
+function abrirLogin(role) { 
+    roleType = role; 
+    document.getElementById('modal-login').style.display = 'flex'; 
+    const passInput = document.getElementById('modal-pass');
+    passInput.value = ''; 
+    setTimeout(() => passInput.focus(), 100); 
+}
+
 function cerrarModal() { document.getElementById('modal-login').style.display = 'none'; }
-function confirmingLogin() { confirmarLogin(); }
 
 function confirmarLogin() {
     const pass = document.getElementById('modal-pass').value;
     if(!pass) return;
+    
     let success = false;
     let sessionData = null;
 
@@ -135,6 +147,7 @@ function confirmarLogin() {
         sessionData = { role: 'admin', id: 'admin' };
     }
     else if(roleType === 'edp') {
+        // Buscar en el array cargado de Firebase
         const found = edps.find(e => e.clave === pass);
         if (found) {
             currentUser = found;
@@ -157,7 +170,7 @@ function confirmarLogin() {
         localStorage.setItem('guardianes_session', JSON.stringify(sessionData));
         cerrarModal();
     } else {
-        alert("Clave incorrecta");
+        alert("Clave incorrecta o datos aún cargando...");
     }
 }
 
@@ -171,13 +184,22 @@ function navTo(viewId) {
     document.getElementById(viewId).style.display = 'block';
     document.getElementById('btn-logout').style.display = 'block';
     
-    if(viewId === 'view-portero') document.getElementById('nav-portero').style.display = 'flex';
-    else document.getElementById('nav-portero').style.display = 'none';
+    const navBar = document.getElementById('nav-portero');
+    if(viewId === 'view-portero' || viewId === 'view-ranking') {
+        if(roleType === 'portero') navBar.style.display = 'flex';
+    } else {
+        navBar.style.display = 'none';
+    }
+
+    if(viewId === 'view-admin') {
+        // Limpiar form al entrar
+        limpiarFormAdmin();
+    }
 
     refreshCurrentView();
 }
 
-/* ================= ADMIN ================= */
+/* ================= FUNCIONES ADMIN ================= */
 function procesarImagenSegura(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -187,12 +209,12 @@ function procesarImagenSegura(event) {
         img.src = e.target.result;
         img.onload = function() {
             const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-            const maxSize = 300; // Reducido un poco para optimizar Firebase
+            const maxSize = 250; // Reducido para asegurar que entra en DB
             let width = img.width; let height = img.height;
             if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } 
             else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
             canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
-            fotoTemp = canvas.toDataURL('image/jpeg', 0.7);
+            fotoTemp = canvas.toDataURL('image/jpeg', 0.6); // Calidad media
             document.getElementById('fotoPreview').src = fotoTemp;
         }
     }
@@ -203,91 +225,86 @@ function guardarPortero() {
     const idEdit = document.getElementById('reg-id').value; 
     const nombre = document.getElementById('reg-nombre').value; 
     const clave = document.getElementById('reg-clave').value;
-    if(!nombre || !clave) return alert("Faltan datos");
+    
+    if(!nombre || !clave) return alert("Nombre y Clave son obligatorios");
 
     const statsBase = { men:60, tec:60, jue:60, ret:60 };
     
-    // Si editamos, buscamos el original para no perder datos
+    // Si estamos editando, buscamos el original en el array local para no perder su historial/puntos
     const original = idEdit ? porteros.find(p => p.id == idEdit) : null;
 
+    const nuevoId = idEdit ? parseInt(idEdit) : Date.now();
+
     const datos = {
-        id: idEdit ? parseInt(idEdit) : Date.now(),
-        nombre, 
-        equipo: document.getElementById('reg-equipo').value, 
-        sede: document.getElementById('reg-sede').value,
-        ano: document.getElementById('reg-ano').value, 
-        entrenador: document.getElementById('reg-entrenador-select').value,
-        pierna: document.getElementById('reg-pierna').value, 
-        mano: document.getElementById('reg-mano').value, 
-        clave,
+        id: nuevoId,
+        nombre: nombre,
+        equipo: document.getElementById('reg-equipo').value || "", 
+        sede: document.getElementById('reg-sede').value || "",
+        ano: document.getElementById('reg-ano').value || "", 
+        entrenador: document.getElementById('reg-entrenador-select').value || "",
+        pierna: document.getElementById('reg-pierna').value || "", 
+        mano: document.getElementById('reg-mano').value || "", 
+        clave: clave,
         foto: fotoTemp || (original ? original.foto : ""),
-        puntos: original ? original.puntos : 0,
+        puntos: original ? (original.puntos || 0) : 0,
         stats: original ? (original.stats || statsBase) : statsBase,
-        mensajeManual: original ? original.mensajeManual : "",
+        mensajeManual: original ? (original.mensajeManual || "") : "",
         historial: original ? (original.historial || []) : []
     };
 
-    set(ref(db, 'porteros/' + datos.id), datos)
+    // GUARDAR EN FIREBASE
+    set(ref(db, 'porteros/' + nuevoId), datos)
         .then(() => {
-            showToast("Guardado en la Nube");
+            showToast("Portero Guardado");
             limpiarFormAdmin();
         })
-        .catch((e) => alert("Error Firebase: " + e.message));
+        .catch((error) => {
+            alert("Error al guardar: " + error.message);
+        });
 }
 
 function crearEDP() {
     const nombre = document.getElementById('edp-nombre').value;
     const clave = document.getElementById('edp-clave').value;
-    if(!nombre || !clave) return;
+    
+    if(!nombre || !clave) return alert("Faltan datos del entrenador");
     
     const id = Date.now();
-    set(ref(db, 'edps/' + id), { id, nombre, clave })
+    const datos = { id, nombre, clave };
+
+    set(ref(db, 'edps/' + id), datos)
         .then(() => {
             showToast("Entrenador Creado");
             document.getElementById('edp-nombre').value = "";
             document.getElementById('edp-clave').value = "";
+        })
+        .catch((error) => {
+            alert("Error al crear entrenador: " + error.message);
         });
 }
 
 function borrarPortero(id) {
-    if(confirm("¿Eliminar definitivamente?")) {
-        remove(ref(db, 'porteros/' + id));
+    if(confirm("¿Estás seguro de eliminar este portero?")) {
+        remove(ref(db, 'porteros/' + id))
+            .then(() => showToast("Portero eliminado"));
     }
 }
 
-// Renderizados Admin (Visualmente igual)
-function renderAdminList() { 
-    document.getElementById('admin-lista-porteros').innerHTML = porteros.map(p => `
-        <div class="ranking-card-style" style="border-left: 4px solid var(--atm-blue);">
-            <img src="${p.foto || 'https://via.placeholder.com/50'}" class="mini-foto-list">
-            <div class="rank-info">
-                <div class="rank-name">${p.nombre}</div>
-                <div class="rank-team"><i class="fas fa-map-marker-alt"></i> ${p.sede || '-'} | ${p.equipo || '-'}</div>
-            </div>
-            <div class="admin-actions-modern">
-                <button class="btn-admin-action btn-edit" onclick="editarPortero(${p.id})"><i class="fas fa-edit"></i></button>
-                <button class="btn-admin-action btn-del" onclick="borrarPortero(${p.id})"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>`).join(''); 
-}
-function renderEDPListAdmin() {
-    document.getElementById('admin-lista-edps').innerHTML = edps.map(e => `
-        <div class="ranking-card-style" style="border-left: 4px solid var(--lvl-3);">
-            <div style="width:50px;height:50px;background:var(--lvl-3);color:black;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;margin-right:12px;">${e.nombre.charAt(0)}</div>
-            <div class="rank-info"><div class="rank-name">${e.nombre}</div><div class="rank-team">Clave: ${e.clave}</div></div>
-        </div>`).join('');
-}
-function cargarSelectEDP() {
-    document.getElementById('reg-entrenador-select').innerHTML = '<option value="">Asignar EDP...</option>' + edps.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join('');
-}
 function limpiarFormAdmin() {
     document.querySelectorAll('#view-admin input').forEach(i => i.value = "");
-    document.getElementById('fotoPreview').src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    document.getElementById('fotoPreview').src = "https://via.placeholder.com/150?text=FOTO";
     document.getElementById('reg-id').value = "";
+    document.getElementById('reg-sede').value = "";
+    document.getElementById('reg-entrenador-select').value = "";
+    document.getElementById('reg-pierna').value = "";
+    document.getElementById('reg-mano').value = "";
     fotoTemp = "";
 }
+
 function editarPortero(id) {
     const p = porteros.find(x => x.id === id);
+    if(!p) return;
+    
     document.getElementById('reg-id').value = p.id;
     document.getElementById('reg-nombre').value = p.nombre;
     document.getElementById('reg-equipo').value = p.equipo;
@@ -295,27 +312,91 @@ function editarPortero(id) {
     document.getElementById('reg-ano').value = p.ano;
     document.getElementById('reg-entrenador-select').value = p.entrenador;
     document.getElementById('reg-clave').value = p.clave;
-    if(p.foto) { document.getElementById('fotoPreview').src = p.foto; fotoTemp = p.foto; }
-    document.querySelector('.modern-card').scrollIntoView({behavior: 'smooth'});
+    document.getElementById('reg-pierna').value = p.pierna;
+    document.getElementById('reg-mano').value = p.mano;
+    
+    if(p.foto) { 
+        document.getElementById('fotoPreview').src = p.foto; 
+        fotoTemp = p.foto; 
+    } else {
+        document.getElementById('fotoPreview').src = "https://via.placeholder.com/150?text=FOTO";
+        fotoTemp = "";
+    }
+    
+    document.querySelector('.modern-card').scrollIntoView({ behavior: 'smooth' });
 }
 
-/* ================= EDP ================= */
+// RENDERIZADO ADMIN (TIPO RANKING)
+function renderAdminList() { 
+    const container = document.getElementById('admin-lista-porteros');
+    if(!container) return;
+    container.innerHTML = porteros.map(p => `
+        <div class="ranking-card-style" style="border-left: 4px solid var(--atm-blue);">
+            <img src="${p.foto || 'https://via.placeholder.com/50'}" class="mini-foto-list">
+            <div class="rank-info">
+                <div class="rank-name">${p.nombre}</div>
+                <div class="rank-team">
+                    <i class="fas fa-map-marker-alt"></i> ${p.sede || '-'} | <i class="fas fa-tshirt"></i> ${p.equipo || '-'}
+                </div>
+            </div>
+            <div class="admin-actions-modern">
+                <button class="btn-admin-action btn-edit" onclick="editarPortero(${p.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn-admin-action btn-del" onclick="borrarPortero(${p.id})"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `).join(''); 
+}
+
+function renderEDPListAdmin() { 
+    const container = document.getElementById('admin-lista-edps');
+    if(!container) return;
+    container.innerHTML = edps.map(e => `
+        <div class="ranking-card-style" style="border-left: 4px solid var(--lvl-3);">
+            <div style="width:50px; height:50px; background:var(--lvl-3); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.2rem; margin-right:12px;">${e.nombre.charAt(0)}</div>
+            <div class="rank-info">
+                <div class="rank-name">${e.nombre}</div>
+                <div class="rank-team">Clave: ${e.clave}</div>
+            </div>
+        </div>
+    `).join(''); 
+}
+
+function cargarSelectEDP() {
+    const select = document.getElementById('reg-entrenador-select');
+    if(select) {
+        select.innerHTML = '<option value="">Asignar EDP...</option>' + edps.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join('');
+    }
+}
+
+/* ================= MODULO ENTRENADOR ================= */
 function renderEvaluacionList() {
     const div = document.getElementById('edp-lista-porteros');
     const misPorteros = porteros.filter(p => p.entrenador === currentUser.nombre);
-    if(misPorteros.length === 0) { div.innerHTML = "<p style='text-align:center;'>No tienes porteros asignados.</p>"; return; }
+    
+    if(misPorteros.length === 0) { 
+        div.innerHTML = "<p style='text-align:center; padding:20px;'>No tienes porteros asignados.</p>"; 
+        return; 
+    }
     
     div.innerHTML = misPorteros.map(p => `
         <div class="portero-card" id="card-${p.id}">
             <div class="card-header-flex" onclick="toggleCard(${p.id})">
                 <div class="profile-flex">
                     <img src="${p.foto || 'https://via.placeholder.com/50'}" class="mini-foto-list">
-                    <div><div style="font-weight:bold;">${p.nombre}</div><div style="font-size:0.7rem;">${p.puntos} PTS</div></div>
+                    <div>
+                        <div style="font-weight:bold;">${p.nombre}</div>
+                        <div style="font-size:0.7rem; color:var(--text-sec);">${p.puntos} PTS</div>
+                    </div>
                 </div>
                 <i class="fas fa-chevron-down" style="color:var(--text-sec)"></i>
             </div>
             <div class="points-container">
-                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
+                <div class="category-block">
+                    <div class="chat-input-container">
+                        <input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Mensaje para el portero...">
+                        <button class="btn-chat-send" onclick="guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
                 
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 2, 'men', 'Puntual')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
@@ -354,29 +435,32 @@ function renderEvaluacionList() {
                         ${p.historial && p.historial.length > 0 
                             ? p.historial.slice(0, 5).map(h => `
                                 <div class="history-item">
-                                    <span class="hist-date">${h.fecha.split(' ')[1]}</span>
+                                    <span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span>
                                     <span class="hist-action">${h.accion}</span>
-                                    <span class="hist-pts" style="color:${getColor(h.categoria)}">+${h.puntos}</span>
+                                    <span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span>
                                 </div>`).join('') 
-                            : '<div style="text-align:center;font-size:0.75rem;color:var(--text-sec);">Sin actividad.</div>'}
+                            : '<div style="text-align:center; font-size:0.75rem; color:var(--text-sec);">Sin actividad reciente.</div>'}
                     </div>
                 </div>
             </div>
-        </div>`).join('');
+        </div>
+    `).join('');
 }
-function getColor(cat) { if(cat==='men') return 'var(--col-men)'; if(cat==='tec') return 'var(--col-tec)'; if(cat==='jue') return 'var(--col-jue)'; return 'var(--col-ret)'; }
-function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
 
 function sumar(id, pts, statKey, accionNombre) {
     const p = porteros.find(x => x.id === id);
     if (!p) return;
 
     let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
-    if(s[statKey] === undefined) s[statKey] = 60; // Auto-fix por si acaso
+    // Asegurar que existe la clave
+    if(s[statKey] === undefined) s[statKey] = 60;
 
     let hist = p.historial || [];
     const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+    
+    // Añadir al principio
     hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
+    // Limitar historial
     if(hist.length > 20) hist.pop();
 
     update(ref(db, 'porteros/' + id), {
@@ -389,26 +473,22 @@ function sumar(id, pts, statKey, accionNombre) {
     }).then(() => showToast(`+${pts} ${accionNombre}`));
 }
 
-function guardarFeedback(id) {
-    const input = document.getElementById(`feedback-input-${id}`);
-    if(!input.value) return;
-    update(ref(db, 'porteros/' + id), { mensajeManual: input.value })
-    .then(() => { showToast("Mensaje Enviado"); input.value = ""; });
-}
-
-/* ================= DASHBOARD PORTERO ================= */
+/* ================= MODULO PORTERO ================= */
 function renderDashboard(porteroId) {
     const p = porteros.find(x => x.id === porteroId);
     if(!p) return;
 
-    // Auto-fix stats if needed
+    // AUTO-CORRECCIÓN DE DATOS (PARA EVITAR NaN)
     let s = p.stats || {};
     let needsUpdate = false;
-    if (typeof s.men !== 'number' || isNaN(s.men)) { s.men = 60; needsUpdate = true; }
-    if (typeof s.tec !== 'number' || isNaN(s.tec)) { s.tec = 60; needsUpdate = true; }
-    if (typeof s.jue !== 'number' || isNaN(s.jue)) { s.jue = s.fis || 60; needsUpdate = true; }
-    if (typeof s.ret !== 'number' || isNaN(s.ret)) { s.ret = s.tac || 60; needsUpdate = true; }
-    if (needsUpdate) { update(ref(db, 'porteros/'+p.id), {stats: s}); }
+    if (typeof s.men !== 'number') { s.men = 60; needsUpdate = true; }
+    if (typeof s.tec !== 'number') { s.tec = 60; needsUpdate = true; }
+    if (typeof s.jue !== 'number') { s.jue = s.fis || 60; needsUpdate = true; }
+    if (typeof s.ret !== 'number') { s.ret = s.tac || 60; needsUpdate = true; }
+
+    if (needsUpdate) {
+        update(ref(db, 'porteros/' + p.id), { stats: s });
+    }
 
     document.getElementById('dash-card-nombre').innerText = p.nombre; 
     document.getElementById('dash-feedback-content').innerText = `"${p.mensajeManual || FRASES_MOTIVACIONALES[Math.floor(Math.random() * FRASES_MOTIVACIONALES.length)]}"`;
@@ -487,6 +567,7 @@ function renderRankingList() {
     const bestMen = [...lista].sort((a,b) => (b.stats?.men||0) - (a.stats?.men||0))[0];
     const bestTec = [...lista].sort((a,b) => (b.stats?.tec||0) - (a.stats?.tec||0))[0];
     smartDiv.innerHTML = `<div class="smart-card"><span class="smart-icon">🧠</span><span class="smart-title">Actitud</span><span class="smart-winner">${bestMen ? bestMen.nombre : '-'}</span></div><div class="smart-card"><span class="smart-icon">🧤</span><span class="smart-title">Técnica</span><span class="smart-winner">${bestTec ? bestTec.nombre : '-'}</span></div>`;
+    
     div.innerHTML = lista.map((p, i) => `
         <div class="ranking-card-style rank-${i+1}" style="${currentUser && p.id === currentUser.id ? 'border-color:var(--atm-red);' : ''}">
             <div class="rank-pos">${i+1}</div>
@@ -505,4 +586,7 @@ function togglePasswordVisibility() {
     if (input.type === 'password') { input.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); } 
     else { input.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
 }
-function updateThemeIcon(theme) { document.getElementById('btn-theme').innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; }
+function updateThemeIcon(theme) { 
+    const btn = document.getElementById('btn-theme');
+    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
+}
