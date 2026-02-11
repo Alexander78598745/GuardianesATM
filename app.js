@@ -2,7 +2,9 @@
 let porteros; try { porteros = JSON.parse(localStorage.getItem('atleti_db')) || []; } catch(e) { porteros = []; }
 let edps = JSON.parse(localStorage.getItem('atleti_edps')) || [{id:1, nombre:"Simeone", clave:"CHOLO"}];
 let currentUser = null; let roleType = ""; let fotoTemp = ""; let chartInstance = null; let rankingMode = "global";
-const FRASES_BASE = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo."];
+
+// CORRECCIÓN AQUÍ: El nombre debe coincidir con el que se usa abajo
+const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
 /* ================= INICIO ================= */
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,9 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThemeIcon(savedTheme);
     
     // ENTER PARA LOGIN
-    document.getElementById('modal-pass').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') confirmingLogin();
-    });
+    if(document.getElementById('modal-pass')) {
+        document.getElementById('modal-pass').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') confirmingLogin();
+        });
+    }
 });
 function toggleTheme() {
     const current = document.body.getAttribute('data-theme');
@@ -23,7 +27,10 @@ function toggleTheme() {
     updateThemeIcon(newTheme);
     if(currentUser && document.getElementById('view-portero').style.display === 'block') renderRadar(currentUser);
 }
-function updateThemeIcon(theme) { document.getElementById('btn-theme').innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; }
+function updateThemeIcon(theme) { 
+    const btn = document.getElementById('btn-theme');
+    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
+}
 function togglePasswordVisibility() {
     const input = document.getElementById('modal-pass');
     const icon = document.querySelector('.toggle-password');
@@ -107,7 +114,6 @@ function limpiarFormAdmin() { document.querySelectorAll('#view-admin input').for
 function editarPortero(id) { const p = porteros.find(x => x.id === id); document.getElementById('reg-id').value = p.id; document.getElementById('reg-nombre').value = p.nombre; document.getElementById('reg-equipo').value = p.equipo; document.getElementById('reg-sede').value = p.sede; document.getElementById('reg-ano').value = p.ano; document.getElementById('reg-entrenador-select').value = p.entrenador; document.getElementById('reg-clave').value = p.clave; if(p.foto) document.getElementById('fotoPreview').src = p.foto; fotoTemp = p.foto; document.querySelector('.modern-card').scrollIntoView(); }
 function crearEDP() { const nombre = document.getElementById('edp-nombre').value; const clave = document.getElementById('edp-clave').value; if(!nombre || !clave) return; edps.push({ id: Date.now(), nombre, clave }); localStorage.setItem('atleti_edps', JSON.stringify(edps)); renderEDPListAdmin(); cargarSelectEDP(); document.getElementById('edp-nombre').value = ""; document.getElementById('edp-clave').value = ""; }
 
-// ADMIN RENDER TARJETA (TIPO RANKING)
 function renderAdminList() { 
     document.getElementById('admin-lista-porteros').innerHTML = porteros.map(p => `
         <div class="ranking-card-style" style="border-left: 4px solid var(--atm-blue);">
@@ -139,7 +145,7 @@ function renderEDPListAdmin() {
 function cargarSelectEDP() { document.getElementById('reg-entrenador-select').innerHTML = '<option value="">Asignar EDP...</option>' + edps.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join(''); }
 function borrarPortero(id) { if(confirm("¿Eliminar?")) { porteros = porteros.filter(p => p.id !== id); localStorage.setItem('atleti_db', JSON.stringify(porteros)); renderAdminList(); } }
 
-/* ================= EDP (ESTABLE + HISTORIAL) ================= */
+/* ================= EDP ================= */
 function renderEvaluacionList() {
     const div = document.getElementById('edp-lista-porteros');
     const misPorteros = porteros.filter(p => p.entrenador === currentUser.nombre);
@@ -185,7 +191,7 @@ function sumar(id, pts, statKey, accionNombre) {
     if(!porteros[idx].stats) porteros[idx].stats = { men:60, tec:60, jue:60, ret:60 };
     if(porteros[idx].stats[statKey] !== undefined) porteros[idx].stats[statKey] += pts;
     
-    // HISTORIAL LOGIC
+    // HISTORIAL
     if(!porteros[idx].historial) porteros[idx].historial = [];
     const fecha = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }) + ' ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     porteros[idx].historial.unshift({ fecha: fecha, accion: accionNombre, puntos: pts, categoria: statKey });
@@ -208,7 +214,7 @@ function renderDashboard(porteroId) {
     const p = porteros.find(x => x.id === porteroId);
     if(!p) return;
     
-    // --- AUTOCORRECCIÓN ---
+    // --- AUTOCORRECCIÓN (SOLUCIÓN NaN) ---
     let s = p.stats || {};
     let needsUpdate = false;
 
@@ -223,10 +229,10 @@ function renderDashboard(porteroId) {
         porteros[idx] = p;
         localStorage.setItem('atleti_db', JSON.stringify(porteros));
     }
-    // ----------------------
+    // -------------------------------------
 
     document.getElementById('dash-card-nombre').innerText = p.nombre; 
-    document.getElementById('dash-feedback-content').innerText = `"${p.mensajeManual || FRASES_MOTIVACIONALES[0]}"`;
+    document.getElementById('dash-feedback-content').innerText = `"${p.mensajeManual || FRASES_MOTIVACIONALES[Math.floor(Math.random() * FRASES_MOTIVACIONALES.length)]}"`;
     const imgEl = document.getElementById('card-foto');
     if(p.foto && p.foto.length > 50) { imgEl.src = p.foto; imgEl.style.display = 'block'; } else { imgEl.src = ""; imgEl.style.display = 'none'; }
     
