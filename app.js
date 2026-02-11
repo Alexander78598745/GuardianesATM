@@ -13,7 +13,6 @@ const firebaseConfig = {
   appId: "1:561012664887:web:54fa7726e9dcc84ba0edb2"
 };
 
-// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -23,81 +22,9 @@ let edps = [];
 let currentUser = null; 
 let roleType = ""; 
 let fotoTemp = ""; 
-let chartInstance = null; 
-let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= INICIO ================= */
-document.addEventListener('DOMContentLoaded', () => {
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
-
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.body.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
-    
-    // LOGIN CON ENTER
-    const passInput = document.getElementById('modal-pass');
-    if(passInput) {
-        passInput.addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                confirmarLogin();
-            }
-        });
-    }
-
-    // CARGA DE DATOS
-    const porterosRef = ref(db, 'porteros');
-    onValue(porterosRef, (snapshot) => {
-        const data = snapshot.val();
-        porteros = data ? Object.values(data) : [];
-        refreshCurrentView();
-    });
-
-    const edpsRef = ref(db, 'edps');
-    onValue(edpsRef, (snapshot) => {
-        const data = snapshot.val();
-        edps = data ? Object.values(data) : [];
-        refreshCurrentView();
-    });
-
-    checkSession();
-});
-
-/* ================= SESIÓN ================= */
-function checkSession() {
-    const session = JSON.parse(localStorage.getItem('guardianes_session'));
-    if (session) {
-        roleType = session.role;
-        setTimeout(() => {
-            if (roleType === 'admin') {
-                navTo('view-admin');
-            } else if (roleType === 'edp') {
-                currentUser = edps.find(e => e.id == session.id);
-                if (currentUser) navTo('view-edp');
-            } else if (roleType === 'portero') {
-                currentUser = porteros.find(p => p.id == session.id);
-                if (currentUser) navTo('view-portero');
-            }
-        }, 1000);
-    }
-}
-
-function refreshCurrentView() {
-    const currentView = document.querySelector('section[style*="block"]');
-    if (!currentView) return;
-    
-    if (currentView.id === 'view-admin') {
-        renderAdminList(); renderEDPListAdmin(); cargarSelectEDP();
-    } else if (currentView.id === 'view-edp' && currentUser) {
-        renderEvaluacionList();
-    } else if (currentView.id === 'view-portero' && currentUser) {
-        currentUser = porteros.find(p => p.id === currentUser.id);
-        if(currentUser) renderDashboard(currentUser.id);
-    } else if (currentView.id === 'view-ranking') {
-        renderRankingList();
-    }
-}
+/* ================= FUNCIONES DEL SISTEMA (DEFINICIÓN) ================= */
 
 function abrirLogin(role) { 
     roleType = role; 
@@ -107,7 +34,9 @@ function abrirLogin(role) {
     setTimeout(() => passInput.focus(), 100); 
 }
 
-function cerrarModal() { document.getElementById('modal-login').style.display = 'none'; }
+function cerrarModal() { 
+    document.getElementById('modal-login').style.display = 'none'; 
+}
 
 function confirmarLogin() {
     const pass = document.getElementById('modal-pass').value;
@@ -148,9 +77,41 @@ function confirmarLogin() {
     }
 }
 
+function confirmingLogin() {
+    confirmarLogin();
+}
+
 function logout() { 
     localStorage.removeItem('guardianes_session');
     location.reload(); 
+}
+
+function toggleTheme() {
+    const current = document.body.getAttribute('data-theme');
+    const newTheme = current === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+    if(currentUser && document.getElementById('view-portero').style.display === 'block') {
+        renderRadar(currentUser);
+    }
+}
+
+function updateThemeIcon(theme) { 
+    const btn = document.getElementById('btn-theme');
+    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
+}
+
+function togglePasswordVisibility() {
+    const input = document.getElementById('modal-pass');
+    const icon = document.querySelector('.toggle-password');
+    if (input.type === 'password') { 
+        input.type = 'text'; 
+        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
+    } else { 
+        input.type = 'password'; 
+        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
+    }
 }
 
 function navTo(viewId) {
@@ -169,7 +130,25 @@ function navTo(viewId) {
     refreshCurrentView();
 }
 
-/* ================= ADMIN ================= */
+function navPortero(tab) {
+    document.getElementById('view-portero').style.display = tab === 'home' ? 'block' : 'none';
+    document.getElementById('view-ranking').style.display = tab === 'ranking' ? 'block' : 'none';
+    
+    const btnHome = document.getElementById('nav-btn-home');
+    const btnRank = document.getElementById('nav-btn-rank');
+    
+    if(tab === 'home') {
+        btnHome.classList.add('active');
+        btnRank.classList.remove('active');
+    } else {
+        btnHome.classList.remove('active');
+        btnRank.classList.add('active');
+        renderRankingList();
+    }
+}
+
+/* ================= LÓGICA DE DATOS ================= */
+
 function procesarImagenSegura(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -220,8 +199,12 @@ function guardarPortero() {
     };
 
     set(ref(db, 'porteros/' + nuevoId), datos)
-        .then(() => { showToast("Portero Guardado"); limpiarFormAdmin(); })
-        .catch((e) => alert("Error: " + e.message));
+        .then(() => { 
+            // Crear toast manual simple para evitar dependencia de función externa si falla
+            alert("Guardado correctamente");
+            limpiarFormAdmin(); 
+        })
+        .catch((e) => alert("Error Firebase: " + e.message));
 }
 
 function crearEDP() {
@@ -232,7 +215,7 @@ function crearEDP() {
     const id = Date.now();
     set(ref(db, 'edps/' + id), { id, nombre, clave })
         .then(() => {
-            showToast("Entrenador Creado");
+            alert("Entrenador Creado");
             document.getElementById('edp-nombre').value = "";
             document.getElementById('edp-clave').value = "";
         });
@@ -244,6 +227,7 @@ function borrarPortero(id) {
 
 function limpiarFormAdmin() {
     document.querySelectorAll('#view-admin input').forEach(i => i.value = "");
+    // Imagen base64 placeholder segura
     document.getElementById('fotoPreview').src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJQXSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCI+Rk9UTzwvdGV4dD48L3N2Zz4=";
     document.getElementById('reg-id').value = "";
     fotoTemp = "";
@@ -265,6 +249,49 @@ function editarPortero(id) {
     document.querySelector('.modern-card').scrollIntoView({behavior: 'smooth'});
 }
 
+function toggleCard(id) {
+    const card = document.getElementById(`card-${id}`);
+    if(card) card.classList.toggle('expanded');
+}
+
+function sumar(id, pts, statKey, accionNombre) {
+    const p = porteros.find(x => x.id === id);
+    if (!p) return;
+    let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
+    if(s[statKey] === undefined) s[statKey] = 60;
+    
+    let hist = p.historial || [];
+    const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+    hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
+    if(hist.length > 20) hist.pop();
+
+    update(ref(db, 'porteros/' + id), { 
+        puntos: (p.puntos || 0) + pts, 
+        stats: { ...s, [statKey]: s[statKey] + pts },
+        historial: hist 
+    }); 
+    // Quitamos showToast externo para asegurar que no falle, usamos alert simple si falla algo visual, pero la logica va.
+}
+
+function guardarFeedback(id) {
+    const input = document.getElementById(`feedback-input-${id}`);
+    if(!input || !input.value) return;
+    update(ref(db, 'porteros/' + id), { mensajeManual: input.value })
+    .then(() => { input.value = ""; });
+}
+
+function toggleRanking(mode) { 
+    // Definir variable global
+    window.rankingMode = mode; 
+    document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+    if(mode === 'global') document.getElementById('rank-global').classList.add('active');
+    else if(mode === 'CD Alcalá') document.getElementById('rank-alcala').classList.add('active');
+    else if(mode === 'Cotorruelo') document.getElementById('rank-cotorruelo').classList.add('active');
+    renderRankingList(); 
+}
+
+/* ================= RENDERIZADORES ================= */
+
 function renderAdminList() { 
     const container = document.getElementById('admin-lista-porteros');
     if(!container) return;
@@ -273,9 +300,7 @@ function renderAdminList() {
             <img src="${p.foto || 'https://via.placeholder.com/50'}" class="mini-foto-list">
             <div class="rank-info">
                 <div class="rank-name">${p.nombre}</div>
-                <div class="rank-team">
-                    <i class="fas fa-map-marker-alt"></i> ${p.sede || '-'} | <i class="fas fa-tshirt"></i> ${p.equipo || '-'}
-                </div>
+                <div class="rank-team"><i class="fas fa-map-marker-alt"></i> ${p.sede || '-'} | ${p.equipo || '-'}</div>
             </div>
             <div class="admin-actions-modern">
                 <button class="btn-admin-action btn-edit" onclick="window.editarPortero(${p.id})"><i class="fas fa-edit"></i></button>
@@ -294,8 +319,7 @@ function renderEDPListAdmin() {
                 <div class="rank-name">${e.nombre}</div>
                 <div class="rank-team">Clave: ${e.clave}</div>
             </div>
-        </div>
-    `).join(''); 
+        </div>`).join(''); 
 }
 
 function cargarSelectEDP() {
@@ -303,7 +327,6 @@ function cargarSelectEDP() {
     if(select) { select.innerHTML = '<option value="">Asignar EDP...</option>' + edps.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join(''); }
 }
 
-/* ================= EDP ================= */
 function renderEvaluacionList() {
     const div = document.getElementById('edp-lista-porteros');
     const misPorteros = porteros.filter(p => p.entrenador === currentUser.nombre);
@@ -323,7 +346,7 @@ function renderEvaluacionList() {
                 <i class="fas fa-chevron-down" style="color:var(--text-sec)"></i>
             </div>
             <div class="points-container">
-                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
+                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Puntual')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Escucha')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
@@ -363,99 +386,61 @@ function renderEvaluacionList() {
         </div>`).join('');
 }
 
-function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
-
-function sumar(id, pts, statKey, accionNombre) {
-    const p = porteros.find(x => x.id === id);
-    if (!p) return;
-    let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
-    if(s[statKey] === undefined) s[statKey] = 60;
-    
-    let hist = p.historial || [];
-    const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-    hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
-    if(hist.length > 20) hist.pop();
-
-    update(ref(db, 'porteros/' + id), { 
-        puntos: (p.puntos || 0) + pts, 
-        stats: { ...s, [statKey]: s[statKey] + pts },
-        historial: hist 
-    }).then(() => showToast(`+${pts} ${accionNombre}`));
-}
-
-function guardarFeedback(id) {
-    const input = document.getElementById(`feedback-input-${id}`);
-    if(!input.value) return;
-    update(ref(db, 'porteros/' + id), { mensajeManual: input.value }).then(() => { showToast("Mensaje Enviado"); input.value = ""; });
-}
-
-/* ================= MODULO PORTERO ================= */
 function renderDashboard(porteroId) {
     const p = porteros.find(x => x.id === porteroId);
     if(!p) return;
+    
     let s = p.stats || {};
     let needsUpdate = false;
-    if (typeof s.men !== 'number') { s.men = 60; needsUpdate = true; }
-    if (typeof s.tec !== 'number') { s.tec = 60; needsUpdate = true; }
-    if (typeof s.jue !== 'number') { s.jue = s.fis || 60; needsUpdate = true; }
-    if (typeof s.ret !== 'number') { s.ret = s.tac || 60; needsUpdate = true; }
+    if (typeof s.men !== 'number' || isNaN(s.men)) { s.men = 60; needsUpdate = true; }
+    if (typeof s.tec !== 'number' || isNaN(s.tec)) { s.tec = 60; needsUpdate = true; }
+    if (typeof s.jue !== 'number' || isNaN(s.jue)) { s.jue = 60; needsUpdate = true; }
+    if (typeof s.ret !== 'number' || isNaN(s.ret)) { s.ret = 60; needsUpdate = true; }
+    
     if (needsUpdate) { update(ref(db, 'porteros/' + p.id), { stats: s }); }
 
     document.getElementById('dash-card-nombre').innerText = p.nombre; 
-    document.getElementById('dash-feedback-content').innerText = `"${p.mensajeManual || FRASES_MOTIVACIONALES[Math.floor(Math.random() * FRASES_MOTIVACIONALES.length)]}"`;
+    document.getElementById('dash-feedback-content').innerText = `"${p.mensajeManual || FRASES_MOTIVACIONALES[0]}"`;
     const imgEl = document.getElementById('card-foto');
     if(p.foto && p.foto.length > 50) { imgEl.src = p.foto; imgEl.style.display = 'block'; } else { imgEl.src = ""; imgEl.style.display = 'none'; }
+    
     document.getElementById('fifa-rating').innerText = Math.min(99, 60 + Math.floor(p.puntos / 30));
     document.getElementById('stat-tec').innerText = Math.min(99, s.tec).toFixed(0);
     document.getElementById('stat-fis').innerText = Math.min(99, s.jue).toFixed(0); 
     document.getElementById('stat-men').innerText = Math.min(99, s.men).toFixed(0);
     document.getElementById('stat-tac').innerText = Math.min(99, s.ret).toFixed(0);
+    
     let w=0, step=1, lvlName="Iniciación", lvlColor="var(--lvl-1)";
     if(p.puntos<=150) { w=(p.puntos/150)*100; }
     else if(p.puntos<=350) { lvlName="Formación"; lvlColor="var(--lvl-2)"; w=((p.puntos-150)/200)*100; step=2; }
     else if(p.puntos<=650) { lvlName="Consolidación"; lvlColor="var(--lvl-3)"; w=((p.puntos-350)/300)*100; step=3; }
     else if(p.puntos<=900) { lvlName="Rendimiento"; lvlColor="var(--lvl-4)"; w=((p.puntos-650)/250)*100; step=4; }
     else { lvlName="Referente"; lvlColor="var(--lvl-5)"; w=100; step=5; }
+    
     document.getElementById('level-title').innerText = "Nivel: " + lvlName;
     document.getElementById('level-title').style.color = lvlColor;
     document.getElementById('dash-puntos-badge').innerText = p.puntos + " PTS";
     document.getElementById('dash-puntos-badge').style.backgroundColor = lvlColor;
     document.getElementById('progress-fill').style.width = Math.min(w, 100) + "%";
     document.getElementById('progress-fill').style.background = lvlColor;
-    
-    // Insignias y Chart...
+
     renderRadar(p);
 }
 
-function renderRadar(p) {
-    const ctxEl = document.getElementById('adnChart');
-    if (!ctxEl) return;
-    if (chartInstance) { chartInstance.destroy(); }
-    const s = p.stats || { men:60, tec:60, jue:60, ret:60 };
-    const isDark = document.body.getAttribute('data-theme') === 'dark';
-    chartInstance = new Chart(ctxEl, {
-        type: 'radar',
-        data: {
-            labels: ['Actitud', 'Técnica', 'Juego', 'Retos'],
-            datasets: [{
-                label: 'Rendimiento', data: [s.men, s.tec, s.jue, s.ret],
-                backgroundColor: 'rgba(203, 53, 36, 0.5)', borderColor: 'rgba(203, 53, 36, 1)', borderWidth: 2, pointBackgroundColor: '#fff'
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }, pointLabels: { color: isDark ? 'white' : '#333', font: {size: 11} }, ticks: { display: false } } }, plugins: { legend: { display: false } } }
-    });
-}
-
-function toggleRanking(mode) { rankingMode = mode; document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active')); if(mode === 'global') document.getElementById('rank-global').classList.add('active'); else if(mode === 'CD Alcalá') document.getElementById('rank-alcala').classList.add('active'); else if(mode === 'Cotorruelo') document.getElementById('rank-cotorruelo').classList.add('active'); renderRankingList(); }
 function renderRankingList() {
     const div = document.getElementById('ranking-list-container');
     const smartDiv = document.getElementById('smart-rankings');
     let lista = [...porteros];
-    if(rankingMode !== 'global') lista = lista.filter(p => p.sede === rankingMode);
+    if(window.rankingMode && window.rankingMode !== 'global') {
+        lista = lista.filter(p => p.sede === window.rankingMode);
+    }
     lista.sort((a,b) => b.puntos - a.puntos);
+    
     const bestMen = [...lista].sort((a,b) => (b.stats?.men||0) - (a.stats?.men||0))[0];
     const bestTec = [...lista].sort((a,b) => (b.stats?.tec||0) - (a.stats?.tec||0))[0];
+    
     smartDiv.innerHTML = `<div class="smart-card"><span class="smart-icon">🧠</span><span class="smart-title">Actitud</span><span class="smart-winner">${bestMen ? bestMen.nombre : '-'}</span></div><div class="smart-card"><span class="smart-icon">🧤</span><span class="smart-title">Técnica</span><span class="smart-winner">${bestTec ? bestTec.nombre : '-'}</span></div>`;
+    
     div.innerHTML = lista.map((p, i) => `
         <div class="ranking-card-style rank-${i+1}" style="${currentUser && p.id === currentUser.id ? 'border-color:var(--atm-red);' : ''}">
             <div class="rank-pos">${i+1}</div>
@@ -468,13 +453,40 @@ function renderRankingList() {
         </div>
     `).join('');
 }
-function togglePasswordVisibility() { const i = document.getElementById('modal-pass'); i.type = i.type==='password'?'text':'password'; }
-function updateThemeIcon(t) { document.getElementById('btn-theme').innerHTML = t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; }
 
-/* --- EXPOSICIÓN DE FUNCIONES A LA VENTANA GLOBAL (HTML) --- */
+function checkSession() {
+    const session = JSON.parse(localStorage.getItem('guardianes_session'));
+    if (session) {
+        roleType = session.role;
+        setTimeout(() => {
+            if (roleType === 'admin') {
+                navTo('view-admin');
+            } else if (roleType === 'edp') {
+                currentUser = edps.find(e => e.id == session.id);
+                if (currentUser) navTo('view-edp');
+            } else if (roleType === 'portero') {
+                currentUser = porteros.find(p => p.id == session.id);
+                if (currentUser) navTo('view-portero');
+            }
+        }, 800);
+    }
+}
+
+function refreshCurrentView() {
+    const currentView = document.querySelector('section[style*="block"]');
+    if (!currentView) return;
+    if (currentView.id === 'view-admin') { renderAdminList(); renderEDPListAdmin(); cargarSelectEDP(); }
+    else if (currentView.id === 'view-edp' && currentUser) { renderEvaluacionList(); }
+    else if (currentView.id === 'view-portero' && currentUser) { currentUser = porteros.find(p => p.id === currentUser.id); if(currentUser) renderDashboard(currentUser.id); }
+    else if (currentView.id === 'view-ranking') { renderRankingList(); }
+}
+
+/* ================= EXPOSICIÓN FINAL (AQUÍ ESTÁ EL ARREGLO) ================= */
+// Vinculamos todas las funciones al objeto global window para que el HTML pueda verlas
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;
+window.confirmingLogin = confirmingLogin;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
 window.navPortero = navPortero;
