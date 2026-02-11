@@ -27,25 +27,6 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= FUNCIONES A window (SOLUCIÓN) ================= */
-window.abrirLogin = abrirLogin;
-window.cerrarModal = cerrarModal;
-window.confirmarLogin = confirmarLogin;
-window.logout = logout;
-window.toggleTheme = toggleTheme;
-window.navPortero = navPortero;
-window.toggleRanking = toggleRanking;
-window.procesarImagenSegura = procesarImagenSegura;
-window.guardarPortero = guardarPortero;
-window.limpiarFormAdmin = limpiarFormAdmin;
-window.editarPortero = editarPortero;
-window.borrarPortero = borrarPortero;
-window.crearEDP = crearEDP;
-window.toggleCard = toggleCard;
-window.sumar = sumar;
-window.guardarFeedback = guardarFeedback;
-window.togglePasswordVisibility = togglePasswordVisibility;
-
 /* ================= INICIO ================= */
 document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
@@ -297,8 +278,8 @@ function renderAdminList() {
                 </div>
             </div>
             <div class="admin-actions-modern">
-                <button class="btn-admin-action btn-edit" onclick="editarPortero(${p.id})"><i class="fas fa-edit"></i></button>
-                <button class="btn-admin-action btn-del" onclick="borrarPortero(${p.id})"><i class="fas fa-trash"></i></button>
+                <button class="btn-admin-action btn-edit" onclick="window.editarPortero(${p.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn-admin-action btn-del" onclick="window.borrarPortero(${p.id})"><i class="fas fa-trash"></i></button>
             </div>
         </div>`).join(''); 
 }
@@ -331,7 +312,7 @@ function renderEvaluacionList() {
     
     div.innerHTML = misPorteros.map(p => `
         <div class="portero-card" id="card-${p.id}">
-            <div class="card-header-flex" onclick="toggleCard(${p.id})">
+            <div class="card-header-flex" onclick="window.toggleCard(${p.id})">
                 <div class="profile-flex">
                     <img src="${p.foto || 'https://via.placeholder.com/50'}" class="mini-foto-list">
                     <div>
@@ -342,35 +323,34 @@ function renderEvaluacionList() {
                 <i class="fas fa-chevron-down" style="color:var(--text-sec)"></i>
             </div>
             <div class="points-container">
-                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
+                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
-                    <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 2, 'men', 'Puntual')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
-                    <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 2, 'men', 'Escucha')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
-                    <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 3, 'men', 'Reacción')"><i class="fas fa-bolt"></i><span>+3</span>Reacción</button>
-                    <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 2, 'men', 'Ayuda')"><i class="fas fa-handshake"></i><span>+2</span>Ayuda</button>
-                    <button class="btn-modern-score btn-men" onclick="sumar(${p.id}, 1, 'men', 'Espíritu')"><i class="fas fa-fire"></i><span>+1</span>Espíritu</button>
+                    <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Puntual')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
+                    <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Escucha')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
+                    <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 3, 'men', 'Reacción')"><i class="fas fa-bolt"></i><span>+3</span>Reacción</button>
+                    <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Ayuda')"><i class="fas fa-handshake"></i><span>+2</span>Ayuda</button>
+                    <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 1, 'men', 'Espíritu')"><i class="fas fa-fire"></i><span>+1</span>Espíritu</button>
                 </div></div>
                 <div class="category-block"><div class="category-header cat-tec"><i class="fas fa-mitten"></i> TÉCNICA</div><div class="points-grid-modern">
-                    <button class="btn-modern-score btn-tec" onclick="sumar(${p.id}, 1, 'tec', 'Blocaje')"><i class="fas fa-hand-rock"></i><span>+1</span>Blocaje</button>
-                    <button class="btn-modern-score btn-tec" onclick="sumar(${p.id}, 1, 'tec', 'Caída')"><i class="fas fa-arrow-down"></i><span>+1</span>Caída</button>
-                    <button class="btn-modern-score btn-tec" onclick="sumar(${p.id}, 1, 'tec', 'Despeje')"><i class="fas fa-futbol"></i><span>+1</span>Despeje</button>
-                    <button class="btn-modern-score btn-tec" onclick="sumar(${p.id}, 2, 'tec', 'Reflejo')"><i class="fas fa-bolt"></i><span>+2</span>Reflejo</button>
-                    <button class="btn-modern-score btn-tec" onclick="sumar(${p.id}, 3, 'tec', 'TOP')"><i class="fas fa-star"></i><span>+3</span>TOP</button>
+                    <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 1, 'tec', 'Blocaje')"><i class="fas fa-hand-rock"></i><span>+1</span>Blocaje</button>
+                    <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 1, 'tec', 'Caída')"><i class="fas fa-arrow-down"></i><span>+1</span>Caída</button>
+                    <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 1, 'tec', 'Despeje')"><i class="fas fa-futbol"></i><span>+1</span>Despeje</button>
+                    <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 2, 'tec', 'Reflejo')"><i class="fas fa-bolt"></i><span>+2</span>Reflejo</button>
+                    <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 3, 'tec', 'TOP')"><i class="fas fa-star"></i><span>+3</span>TOP</button>
                 </div></div>
                 <div class="category-block"><div class="category-header cat-jue"><i class="fas fa-running"></i> JUEGO</div><div class="points-grid-modern">
-                    <button class="btn-modern-score btn-jue" onclick="sumar(${p.id}, 2, 'jue', '1vs1')"><i class="fas fa-shield-alt"></i><span>+2</span>1vs1</button>
-                    <button class="btn-modern-score btn-jue" onclick="sumar(${p.id}, 2, 'jue', 'Salida')"><i class="fas fa-rocket"></i><span>+2</span>Salida</button>
-                    <button class="btn-modern-score btn-jue" onclick="sumar(${p.id}, 1, 'jue', 'Decisión')"><i class="fas fa-lightbulb"></i><span>+1</span>Decisión</button>
-                    <button class="btn-modern-score btn-jue" onclick="sumar(${p.id}, 1, 'jue', 'Voz')"><i class="fas fa-bullhorn"></i><span>+1</span>Voz</button>
-                    <button class="btn-modern-score btn-jue" onclick="sumar(${p.id}, 1, 'jue', 'Posición')"><i class="fas fa-map-marker-alt"></i><span>+1</span>Posición</button>
+                    <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 2, 'jue', '1vs1')"><i class="fas fa-shield-alt"></i><span>+2</span>1vs1</button>
+                    <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 2, 'jue', 'Salida')"><i class="fas fa-rocket"></i><span>+2</span>Salida</button>
+                    <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 1, 'jue', 'Decisión')"><i class="fas fa-lightbulb"></i><span>+1</span>Decisión</button>
+                    <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 1, 'jue', 'Voz')"><i class="fas fa-bullhorn"></i><span>+1</span>Voz</button>
+                    <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 1, 'jue', 'Posición')"><i class="fas fa-map-marker-alt"></i><span>+1</span>Posición</button>
                 </div></div>
                 <div class="category-block"><div class="category-header cat-ret"><i class="fas fa-trophy"></i> RETOS</div><div class="points-grid-modern">
-                    <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 4, 'ret', 'Reto')"><i class="fas fa-check-circle"></i><span>+4</span>Reto</button>
-                    <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 6, 'ret', 'Perfecto')"><i class="fas fa-fire-alt"></i><span>+6</span>Perfect</button>
-                    <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 2, 'ret', 'Mejora')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
-                    <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 2, 'ret', 'MVP')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
+                    <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 4, 'ret', 'Reto')"><i class="fas fa-check-circle"></i><span>+4</span>Reto</button>
+                    <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 6, 'ret', 'Perfecto')"><i class="fas fa-fire-alt"></i><span>+6</span>Perfect</button>
+                    <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'Mejora')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
+                    <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'MVP')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
                 </div></div>
-                
                 <div class="category-block" style="border:none;">
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
@@ -490,3 +470,22 @@ function renderRankingList() {
 }
 function togglePasswordVisibility() { const i = document.getElementById('modal-pass'); i.type = i.type==='password'?'text':'password'; }
 function updateThemeIcon(t) { document.getElementById('btn-theme').innerHTML = t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; }
+
+/* --- EXPOSICIÓN DE FUNCIONES A LA VENTANA GLOBAL (HTML) --- */
+window.abrirLogin = abrirLogin;
+window.cerrarModal = cerrarModal;
+window.confirmarLogin = confirmarLogin;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+window.navPortero = navPortero;
+window.toggleRanking = toggleRanking;
+window.procesarImagenSegura = procesarImagenSegura;
+window.guardarPortero = guardarPortero;
+window.limpiarFormAdmin = limpiarFormAdmin;
+window.editarPortero = editarPortero;
+window.borrarPortero = borrarPortero;
+window.crearEDP = crearEDP;
+window.toggleCard = toggleCard;
+window.sumar = sumar;
+window.guardarFeedback = guardarFeedback;
+window.togglePasswordVisibility = togglePasswordVisibility;
