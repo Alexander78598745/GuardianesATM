@@ -27,7 +27,7 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= EXPOSICIÓN DE FUNCIONES A HTML ================= */
+/* ================= EXPOSICIÓN DE FUNCIONES (SOLUCIÓN A LOS BOTONES) ================= */
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
     
-    // LOGIN CON ENTER
+    // ENTER PARA LOGIN
     const passInput = document.getElementById('modal-pass');
     if(passInput) {
         passInput.addEventListener("keydown", function(event) {
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // CARGA DE DATOS
+    // CARGA DE DATOS EN TIEMPO REAL
     const porterosRef = ref(db, 'porteros');
     onValue(porterosRef, (snapshot) => {
         const data = snapshot.val();
@@ -240,7 +240,7 @@ function guardarPortero() {
 
     set(ref(db, 'porteros/' + nuevoId), datos)
         .then(() => { showToast("Portero Guardado"); limpiarFormAdmin(); })
-        .catch((e) => alert("Error Firebase: " + e.message));
+        .catch((e) => alert("Error: " + e.message));
 }
 
 function crearEDP() {
@@ -292,7 +292,9 @@ function renderAdminList() {
             <img src="${p.foto || 'https://via.placeholder.com/50'}" class="mini-foto-list">
             <div class="rank-info">
                 <div class="rank-name">${p.nombre}</div>
-                <div class="rank-team"><i class="fas fa-map-marker-alt"></i> ${p.sede || '-'} | ${p.equipo || '-'}</div>
+                <div class="rank-team">
+                    <i class="fas fa-map-marker-alt"></i> ${p.sede || '-'} | <i class="fas fa-tshirt"></i> ${p.equipo || '-'}
+                </div>
             </div>
             <div class="admin-actions-modern">
                 <button class="btn-admin-action btn-edit" onclick="editarPortero(${p.id})"><i class="fas fa-edit"></i></button>
@@ -301,14 +303,18 @@ function renderAdminList() {
         </div>`).join(''); 
 }
 
-function renderEDPListAdmin() {
+function renderEDPListAdmin() { 
     const container = document.getElementById('admin-lista-edps');
     if(!container) return;
     container.innerHTML = edps.map(e => `
         <div class="ranking-card-style" style="border-left: 4px solid var(--lvl-3);">
-            <div style="width:50px;height:50px;background:var(--lvl-3);color:black;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;margin-right:12px;">${e.nombre.charAt(0)}</div>
-            <div class="rank-info"><div class="rank-name">${e.nombre}</div><div class="rank-team">Clave: ${e.clave}</div></div>
-        </div>`).join('');
+            <div style="width:50px; height:50px; background:var(--lvl-3); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.2rem; margin-right:12px;">${e.nombre.charAt(0)}</div>
+            <div class="rank-info">
+                <div class="rank-name">${e.nombre}</div>
+                <div class="rank-team">Clave: ${e.clave}</div>
+            </div>
+        </div>
+    `).join(''); 
 }
 
 function cargarSelectEDP() {
@@ -364,7 +370,6 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 2, 'ret', 'Mejora')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
                     <button class="btn-modern-score btn-ret" onclick="sumar(${p.id}, 2, 'ret', 'MVP')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
                 </div></div>
-                
                 <div class="category-block" style="border:none;">
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
@@ -374,7 +379,8 @@ function renderEvaluacionList() {
                     </div>
                 </div>
             </div>
-        </div>`).join('');
+        </div>
+    `).join('');
 }
 
 function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
@@ -385,7 +391,6 @@ function sumar(id, pts, statKey, accionNombre) {
     let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
     if(s[statKey] === undefined) s[statKey] = 60;
     
-    // HISTORIAL
     let hist = p.historial || [];
     const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
     hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
@@ -408,37 +413,57 @@ function guardarFeedback(id) {
 function renderDashboard(porteroId) {
     const p = porteros.find(x => x.id === porteroId);
     if(!p) return;
+    
+    // --- AUTOCORRECCIÓN (SOLUCIÓN NaN) ---
     let s = p.stats || {};
     let needsUpdate = false;
-    if (typeof s.men !== 'number') { s.men = 60; needsUpdate = true; }
-    if (typeof s.tec !== 'number') { s.tec = 60; needsUpdate = true; }
-    if (typeof s.jue !== 'number') { s.jue = s.fis || 60; needsUpdate = true; }
-    if (typeof s.ret !== 'number') { s.ret = s.tac || 60; needsUpdate = true; }
-    if (needsUpdate) { update(ref(db, 'porteros/' + p.id), { stats: s }); }
+
+    if (typeof s.men !== 'number' || isNaN(s.men)) { s.men = 60; needsUpdate = true; }
+    if (typeof s.tec !== 'number' || isNaN(s.tec)) { s.tec = 60; needsUpdate = true; }
+    if (typeof s.jue !== 'number' || isNaN(s.jue)) { s.jue = (typeof s.fis === 'number') ? s.fis : 60; needsUpdate = true; }
+    if (typeof s.ret !== 'number' || isNaN(s.ret)) { s.ret = (typeof s.tac === 'number') ? s.tac : 60; needsUpdate = true; }
+
+    if (needsUpdate) {
+        update(ref(db, 'porteros/' + p.id), { stats: s });
+    }
+    // -------------------------------------
 
     document.getElementById('dash-card-nombre').innerText = p.nombre; 
     document.getElementById('dash-feedback-content').innerText = `"${p.mensajeManual || FRASES_MOTIVACIONALES[Math.floor(Math.random() * FRASES_MOTIVACIONALES.length)]}"`;
     const imgEl = document.getElementById('card-foto');
     if(p.foto && p.foto.length > 50) { imgEl.src = p.foto; imgEl.style.display = 'block'; } else { imgEl.src = ""; imgEl.style.display = 'none'; }
+    
     document.getElementById('fifa-rating').innerText = Math.min(99, 60 + Math.floor(p.puntos / 30));
     document.getElementById('stat-tec').innerText = Math.min(99, s.tec).toFixed(0);
     document.getElementById('stat-fis').innerText = Math.min(99, s.jue).toFixed(0); 
     document.getElementById('stat-men').innerText = Math.min(99, s.men).toFixed(0);
     document.getElementById('stat-tac').innerText = Math.min(99, s.ret).toFixed(0);
+    
     let w=0, step=1, lvlName="Iniciación", lvlColor="var(--lvl-1)";
     if(p.puntos<=150) { w=(p.puntos/150)*100; }
     else if(p.puntos<=350) { lvlName="Formación"; lvlColor="var(--lvl-2)"; w=((p.puntos-150)/200)*100; step=2; }
     else if(p.puntos<=650) { lvlName="Consolidación"; lvlColor="var(--lvl-3)"; w=((p.puntos-350)/300)*100; step=3; }
     else if(p.puntos<=900) { lvlName="Rendimiento"; lvlColor="var(--lvl-4)"; w=((p.puntos-650)/250)*100; step=4; }
     else { lvlName="Referente"; lvlColor="var(--lvl-5)"; w=100; step=5; }
+    
     document.getElementById('level-title').innerText = "Nivel: " + lvlName;
     document.getElementById('level-title').style.color = lvlColor;
     document.getElementById('dash-puntos-badge').innerText = p.puntos + " PTS";
     document.getElementById('dash-puntos-badge').style.backgroundColor = lvlColor;
     document.getElementById('progress-fill').style.width = Math.min(w, 100) + "%";
     document.getElementById('progress-fill').style.background = lvlColor;
+
+    // Badges logic (same as before)
+    const badges = [
+        { name: "Primeros Pasos", limit: 30, icon: "shoe-prints" }, { name: "Manos Seguras", limit: 80, icon: "hand-paper" },
+        { name: "Reflejos Felinos", limit: 120, icon: "bolt" }, { name: "Colocación", limit: 150, icon: "compass" },
+        { name: "Mentalidad Pro", limit: 200, icon: "brain" }, { name: "Espíritu Indio", limit: 250, icon: "heart" },
+        { name: "Valiente 1vs1", limit: 300, icon: "shield-alt" }, { name: "Rey del Área", limit: 400, icon: "crown" },
+        { name: "Muro Diamante", limit: 500, icon: "gem" }, { name: "Comunicador", limit: 600, icon: "bullhorn" },
+        { name: "Leyenda", limit: 900, icon: "star" }, { name: "Reto Superado", limit: 9999, icon: "check-circle" }
+    ];
+    document.getElementById('insignias-container').innerHTML = badges.map(b => `<div class="insignia-item"><div class="insignia-box ${p.puntos >= b.limit ? 'unlocked' : 'locked'}"><i class="fas fa-${b.icon}"></i></div><div class="insignia-name">${b.name}</div></div>`).join('');
     
-    // Insignias y Chart...
     renderRadar(p);
 }
 
@@ -468,6 +493,7 @@ function renderRankingList() {
     let lista = [...porteros];
     if(rankingMode !== 'global') lista = lista.filter(p => p.sede === rankingMode);
     lista.sort((a,b) => b.puntos - a.puntos);
+    
     const bestMen = [...lista].sort((a,b) => (b.stats?.men||0) - (a.stats?.men||0))[0];
     const bestTec = [...lista].sort((a,b) => (b.stats?.tec||0) - (a.stats?.tec||0))[0];
     smartDiv.innerHTML = `<div class="smart-card"><span class="smart-icon">🧠</span><span class="smart-title">Actitud</span><span class="smart-winner">${bestMen ? bestMen.nombre : '-'}</span></div><div class="smart-card"><span class="smart-icon">🧤</span><span class="smart-title">Técnica</span><span class="smart-winner">${bestTec ? bestTec.nombre : '-'}</span></div>`;
