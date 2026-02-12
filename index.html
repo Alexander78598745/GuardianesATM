@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Guardianes Atleti - F7</title>
+    <title>Guardianes Atleti</title>
+    
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111a36">
+    
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body data-theme="dark">
@@ -30,11 +36,11 @@
     </div>
 
     <header>
-        <div class="header-content" style="display:flex; align-items:center;">
+        <div class="header-content">
             <img src="logo.png" class="escudo-img" alt="ATM" onerror="this.style.display='none'"> 
             <div class="header-text">
                 <h1>Guardianes <span class="highlight">Atleti</span></h1>
-                <p>Fútbol 7 Academia</p>
+                <p>Academia de Porteros</p>
             </div>
         </div>
         <div style="display:flex; gap:15px; align-items:center;">
@@ -57,7 +63,8 @@
 
         <section id="view-admin" style="display:none;">
             <div class="modern-card">
-                <div class="section-header"><h2>Gestión Porteros</h2></div>
+                <div class="section-header"><h2>Alta Porteros</h2></div>
+                
                 <div class="profile-upload-container" onclick="document.getElementById('fileInput').click()">
                     <img id="fotoPreview" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJQXSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCI+Rk9UTzwvdGV4dD48L3N2Zz4=" style="width:100%; height:100%; object-fit:cover; border-radius:50%; border:3px solid var(--atm-red);">
                     <div class="upload-badge"><i class="fas fa-camera"></i></div>
@@ -77,23 +84,21 @@
                         </select>
                     </div>
                     <div><label class="input-label">EDP</label><select id="reg-entrenador-select"><option value="">Cargando...</option></select></div>
-                    <div><label class="input-label">Pierna</label><select id="reg-pierna"><option>Derecha</option><option>Izquierda</option></select></div>
-                    <div><label class="input-label">Mano</label><select id="reg-mano"><option>Derecha</option><option>Izquierda</option></select></div>
-                    <div class="form-full"><label class="input-label">Clave</label><input type="text" id="reg-clave" placeholder="Contraseña"></div>
+                    <div class="form-full"><label class="input-label">Clave</label><input type="text" id="reg-clave" placeholder="Contraseña Acceso"></div>
                 </div>
                 <div class="row" style="margin-top:15px;">
                     <button class="btn-secondary" onclick="limpiarFormAdmin()">LIMPIAR</button>
                     <button class="btn-main" onclick="guardarPortero()" style="margin-top:0;">GUARDAR</button>
                 </div>
             </div>
-            
+
             <div class="modern-card" style="border-left: 4px solid #f1c40f;">
                 <h3>Alta Entrenador (EDP)</h3>
                 <div class="form-grid" style="margin-top:10px;">
                     <input type="text" id="edp-nombre" placeholder="Nombre EDP">
                     <input type="text" id="edp-clave" placeholder="Clave Acceso">
                 </div>
-                <button class="btn-main" onclick="crearEDP()" style="margin-top:5px; background:var(--text-sec);">Crear EDP</button>
+                <button class="btn-main" onclick="crearEDP()" style="margin-top:5px; background:var(--text-sec); color:black;">Crear EDP</button>
             </div>
 
             <div class="section-divider">PORTEROS</div>
@@ -115,7 +120,7 @@
                             <div class="fifa-rating-simple" id="fifa-rating">60</div>
                             <div class="fifa-pos-simple">POR</div>
                         </div>
-                        <img src="logo.png" style="width:50px; opacity:0.8;">
+                        <img src="logo.png" style="width:50px; opacity:0.9;" onerror="this.style.display='none'">
                     </div>
                     <div class="fifa-photo-frame">
                         <img id="card-foto" class="fifa-player-img-simple" src="" onerror="this.style.display='none'">
@@ -138,17 +143,17 @@
             <div class="modern-card" style="margin-top:20px;">
                  <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h3 id="level-title" style="color:var(--lvl-1); font-size:1rem;">Nivel 1</h3>
-                    <span class="badge" id="dash-puntos-badge" style="color:black;">0 PTS</span>
+                    <span class="badge" id="dash-puntos-badge">0 PTS</span>
                 </div>
                 <div class="progress-track">
                     <div class="progress-fill" id="progress-fill" style="width:0%"></div>
                 </div>
                 <div class="level-grid-system">
-                    <div class="lvl-col step-1"><div class="lvl-circle">1</div></div>
-                    <div class="lvl-col step-2"><div class="lvl-circle">2</div></div>
-                    <div class="lvl-col step-3"><div class="lvl-circle">3</div></div>
-                    <div class="lvl-col step-4"><div class="lvl-circle">4</div></div>
-                    <div class="lvl-col step-5"><div class="lvl-circle"><i class="fas fa-star"></i></div></div>
+                    <div class="lvl-col"><div class="lvl-circle">1</div></div>
+                    <div class="lvl-col"><div class="lvl-circle">2</div></div>
+                    <div class="lvl-col"><div class="lvl-circle">3</div></div>
+                    <div class="lvl-col"><div class="lvl-circle">4</div></div>
+                    <div class="lvl-col"><div class="lvl-circle"><i class="fas fa-star"></i></div></div>
                 </div>
             </div>
 
@@ -185,6 +190,6 @@
         <button onclick="navPortero('ranking')" id="nav-btn-rank"><i class="fas fa-chart-bar"></i></button>
     </nav>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
