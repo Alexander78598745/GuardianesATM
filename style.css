@@ -1,9 +1,9 @@
+/* Copia el mismo style.css que ya tenías, funciona bien */
 :root { 
     --radius-l: 24px; --radius-m: 16px; 
     --lvl-1: #2ecc71; --lvl-2: #3498db; --lvl-3: #e67e22; --lvl-4: #e74c3c; --lvl-5: #f1c40f;
     --col-men: #9b59b6; --col-tec: #3498db; --col-jue: #2ecc71; --col-ret: #f1c40f;
     --atm-red: #CB3524; --atm-blue: #1C2C5B;
-    --gold: #FFD700;
 }
 
 [data-theme="dark"] {
@@ -33,11 +33,12 @@ header { background: linear-gradient(180deg, var(--atm-blue) 0%, rgba(17,26,54,0
 .header-text .highlight { color: var(--atm-red); }
 .btn-logout-clean { background: none; border: none; color: var(--atm-red); font-size: 1.6rem; cursor: pointer; }
 
-/* INPUTS */
+/* PASSWORD FIX */
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 .password-wrapper { position: relative; width: 100%; margin-bottom: 15px; }
 .pass-input { width: 100%; text-align: center; letter-spacing: 5px; font-size: 1.5rem; padding: 12px 40px 12px 12px; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: var(--text-main); }
 .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-sec); font-size: 1.2rem; }
+.toggle-password:hover { color: var(--atm-red); }
 
 /* TOAST */
 .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
@@ -47,20 +48,22 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
 /* HISTORIAL */
-.history-list { max-height: 200px; overflow-y: auto; background: var(--history-bg); border-radius: 10px; padding: 10px; border: 1px solid var(--input-border); margin-top: 10px; }
+.history-list { max-height: 200px; overflow-y: auto; background: var(--history-bg); border-radius: 10px; padding: 10px; border: 1px solid var(--input-border); }
 .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--input-border); font-size: 0.75rem; }
 .history-item:last-child { border-bottom: none; }
-.hist-date { color: var(--text-sec); font-size: 0.65rem; width: 60px; }
-.hist-icon { width: 30px; text-align: center; font-size: 1rem; margin-right: 5px; }
+.hist-date { color: var(--text-sec); font-size: 0.65rem; width: 80px; }
 .hist-action { font-weight: bold; flex: 1; text-align: left; }
 .hist-pts { font-weight: 800; }
 
+/* TITULOS */
 .section-divider, .section-divider-center { text-align: center; color: var(--atm-red); font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 30px 0 15px 0; font-size: 1.1rem; border-bottom: 2px solid rgba(203, 53, 36, 0.2); padding-bottom: 5px; }
 
+/* FORM GRID ADMIN */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-full { grid-column: span 2; }
 .input-label { font-size: 0.75rem; color: var(--text-sec); font-weight: bold; margin-bottom: 5px; display: block; text-transform: uppercase; }
 
+/* CARDS */
 .ranking-card-style { display: flex; align-items: center; background: var(--bg-card); padding: 12px 15px; border-radius: 16px; margin: 0 auto 10px auto; width: 95%; max-width: 350px; border: 1px solid var(--card-border); position: relative; overflow: hidden; transition: transform 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .ranking-card-style:hover { transform: scale(1.02); }
 .mini-foto-list, .rank-avatar { width: 50px !important; height: 50px !important; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--atm-red); margin-right: 12px; }
@@ -70,6 +73,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .rank-team { font-size: 0.7rem; color: var(--text-sec); display: flex; align-items: center; gap: 4px; }
 .rank-score { background: var(--atm-red); color: white; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(203, 53, 36, 0.3); flex-shrink: 0; }
 
+/* TOP 3 RANKING */
 .rank-1 { border: 2px solid #FFD700; background: linear-gradient(90deg, rgba(255, 215, 0, 0.08), var(--bg-card)); transform: scale(1.03); margin-bottom: 12px; }
 .rank-1 .rank-pos { color: #FFD700; font-size: 1.5rem; text-shadow: 0 2px 5px rgba(255, 215, 0, 0.5); }
 .rank-1 .rank-avatar { border-color: #FFD700; width: 55px !important; height: 55px !important; }
@@ -80,16 +84,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .rank-3 .rank-pos { color: #CD7F32; font-size: 1.2rem; }
 .rank-3 .rank-avatar { border-color: #CD7F32; }
 
-/* EDP: TARJETA LIMITADA Y CENTRADA */
-.portero-card { 
-    background-color: var(--input-bg); 
-    border-radius: 12px; 
-    margin: 0 auto 15px auto; 
-    border-left: 4px solid var(--atm-red); 
-    overflow: hidden; 
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-    width: 98%; max-width: 600px; /* LIMITADO PARA PC/TABLET */
-}
+/* EDP */
+.portero-card { background-color: var(--input-bg); border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--atm-red); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .card-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; }
 .profile-flex { display: flex; align-items: center; gap: 15px; width: 100%; }
 .points-container { display: none; padding: 0 15px 15px 15px; background: rgba(0,0,0,0.02); }
@@ -98,7 +94,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .category-block:last-child { border-bottom: none; }
 .category-header { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .points-grid-modern { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.btn-modern-score { background: var(--btn-score-bg); border: 2px solid transparent; border-radius: 12px; padding: 10px; width: 90px; color: var(--text-main); font-size: 0.7rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: all 0.2s ease; min-height: 80px; }
+.btn-modern-score { background: var(--btn-score-bg); border: 2px solid transparent; border-radius: 12px; padding: 10px; width: 100px; color: var(--text-main); font-size: 0.7rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: all 0.2s ease; min-height: 80px; }
 .btn-modern-score i { font-size: 1.8rem; margin-bottom: 5px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
 .btn-modern-score span { font-weight: 900; font-size: 0.9rem; }
 .btn-modern-score:active { transform: scale(0.95); }
@@ -164,31 +160,4 @@ input[type="file"] { display: none; }
 .btn-admin-action { border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
 .btn-edit { background: rgba(52, 152, 219, 0.1); color: #3498db; } .btn-edit:hover { background: #3498db; color: white; }
 .btn-del { background: rgba(231, 76, 60, 0.1); color: #e74c3c; } .btn-del:hover { background: #e74c3c; color: white; }
-
-/* INSIGNIAS (MURO DE TROFEOS - CORREGIDO) */
-.insignias-grid { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
-.insignia-item { display: flex; flex-direction: column; align-items: center; width: 85px; text-align:center; }
-.insignia-box { 
-    width: 70px; height: 70px; 
-    border-radius: 50%; 
-    display: flex; align-items: center; justify-content: center; 
-    font-size: 1.8rem; 
-    transition: 0.3s;
-}
-/* BLOQUEADO (GRIS) */
-.insignia-box.locked {
-    background: rgba(128,128,128,0.1); 
-    border: 2px dashed #777; 
-    color: #777; 
-}
-/* DESBLOQUEADO (DORADO) */
-.insignia-box.unlocked { 
-    background: rgba(255, 215, 0, 0.1); 
-    border: 2px solid var(--gold); 
-    color: var(--gold); 
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); 
-}
-.insignia-name { font-size: 0.65rem; color: var(--text-sec); margin-top: 8px; line-height: 1.2; font-weight: 600; }
-.insignia-box.unlocked + .insignia-name { color: var(--gold); font-weight: 800; }
-
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
