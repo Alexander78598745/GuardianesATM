@@ -33,11 +33,12 @@ header { background: linear-gradient(180deg, var(--atm-blue) 0%, rgba(17,26,54,0
 .header-text .highlight { color: var(--atm-red); }
 .btn-logout-clean { background: none; border: none; color: var(--atm-red); font-size: 1.6rem; cursor: pointer; }
 
-/* INPUTS */
+/* PASSWORD FIX */
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 .password-wrapper { position: relative; width: 100%; margin-bottom: 15px; }
 .pass-input { width: 100%; text-align: center; letter-spacing: 5px; font-size: 1.5rem; padding: 12px 40px 12px 12px; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: var(--text-main); }
 .toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-sec); font-size: 1.2rem; }
+.toggle-password:hover { color: var(--atm-red); }
 
 /* TOAST */
 .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
@@ -46,12 +47,12 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
-/* HISTORIAL */
+/* HISTORIAL (Ajustado) */
 .history-list { max-height: 200px; overflow-y: auto; background: var(--history-bg); border-radius: 10px; padding: 10px; border: 1px solid var(--input-border); margin-top: 10px; }
 .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--input-border); font-size: 0.75rem; }
 .history-item:last-child { border-bottom: none; }
 .hist-date { color: var(--text-sec); font-size: 0.65rem; width: 60px; }
-.hist-icon { width: 20px; text-align: center; margin-right: 5px; }
+.hist-icon { width: 30px; text-align: center; font-size: 1rem; margin-right: 5px; } /* Icono historial */
 .hist-action { font-weight: bold; flex: 1; text-align: left; }
 .hist-pts { font-weight: 800; }
 
@@ -63,7 +64,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .form-full { grid-column: span 2; }
 .input-label { font-size: 0.75rem; color: var(--text-sec); font-weight: bold; margin-bottom: 5px; display: block; text-transform: uppercase; }
 
-/* CARDS GENERAL */
+/* CARDS */
 .ranking-card-style { display: flex; align-items: center; background: var(--bg-card); padding: 12px 15px; border-radius: 16px; margin: 0 auto 10px auto; width: 95%; max-width: 350px; border: 1px solid var(--card-border); position: relative; overflow: hidden; transition: transform 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .ranking-card-style:hover { transform: scale(1.02); }
 .mini-foto-list, .rank-avatar { width: 50px !important; height: 50px !important; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--atm-red); margin-right: 12px; }
@@ -84,16 +85,16 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .rank-3 .rank-pos { color: #CD7F32; font-size: 1.2rem; }
 .rank-3 .rank-avatar { border-color: #CD7F32; }
 
-/* EDP: TARJETA LIMITADA Y CENTRADA */
+/* EDP: TARJETA LIMITADA Y CENTRADA (CORRECCIÓN SOLICITADA) */
 .portero-card { 
     background-color: var(--input-bg); 
     border-radius: 12px; 
-    margin: 0 auto 15px auto; /* Centrado y margen */
+    margin: 0 auto 15px auto; 
     border-left: 4px solid var(--atm-red); 
     overflow: hidden; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-    max-width: 600px; /* LIMITA EL ANCHO EN PC/TABLET */
     width: 98%;
+    max-width: 600px; /* LIMITADO PARA PC/TABLET */
 }
 .card-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; }
 .profile-flex { display: flex; align-items: center; gap: 15px; width: 100%; }
@@ -170,7 +171,7 @@ input[type="file"] { display: none; }
 .btn-edit { background: rgba(52, 152, 219, 0.1); color: #3498db; } .btn-edit:hover { background: #3498db; color: white; }
 .btn-del { background: rgba(231, 76, 60, 0.1); color: #e74c3c; } .btn-del:hover { background: #e74c3c; color: white; }
 
-/* INSIGNIAS (MURO DE TROFEOS) */
+/* INSIGNIAS (CORRECCIÓN: GRIS BLOQUEADO / ORO DESBLOQUEADO) */
 .insignias-grid { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
 .insignia-item { display: flex; flex-direction: column; align-items: center; width: 85px; text-align:center; }
 .insignia-box { 
@@ -180,13 +181,11 @@ input[type="file"] { display: none; }
     font-size: 1.8rem; 
     transition: 0.3s;
 }
-/* BLOQUEADO (GRIS) */
 .insignia-box.locked {
     background: rgba(128,128,128,0.1); 
     border: 2px dashed #777; 
     color: #777; 
 }
-/* DESBLOQUEADO (AMARILLO ORO) */
 .insignia-box.unlocked { 
     background: rgba(255, 215, 0, 0.1); 
     border: 2px solid var(--gold); 

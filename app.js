@@ -13,11 +13,10 @@ const firebaseConfig = {
   appId: "1:561012664887:web:54fa7726e9dcc84ba0edb2"
 };
 
-// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* ================= VARIABLES GLOBALES ================= */
+/* ================= VARIABLES ================= */
 let porteros = [];
 let edps = [];
 let currentUser = null; 
@@ -27,97 +26,7 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= FUNCIONES A window (SOLUCIÓN DEFINITIVA) ================= */
-window.abrirLogin = abrirLogin;
-window.cerrarModal = cerrarModal;
-window.confirmarLogin = confirmarLogin;
-window.logout = logout;
-window.toggleTheme = toggleTheme;
-window.navPortero = navPortero;
-window.toggleRanking = toggleRanking;
-window.procesarImagenSegura = procesarImagenSegura;
-window.guardarPortero = guardarPortero;
-window.limpiarFormAdmin = limpiarFormAdmin;
-window.editarPortero = editarPortero;
-window.borrarPortero = borrarPortero;
-window.borrarEDP = borrarEDP;
-window.crearEDP = crearEDP;
-window.toggleCard = toggleCard;
-window.sumar = sumar;
-window.guardarFeedback = guardarFeedback;
-window.togglePasswordVisibility = togglePasswordVisibility;
-
-/* ================= INICIO ================= */
-document.addEventListener('DOMContentLoaded', () => {
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
-
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.body.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
-    
-    // ENTER PARA LOGIN
-    const passInput = document.getElementById('modal-pass');
-    if(passInput) {
-        passInput.addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                confirmarLogin();
-            }
-        });
-    }
-
-    // CARGA DE DATOS EN TIEMPO REAL
-    const porterosRef = ref(db, 'porteros');
-    onValue(porterosRef, (snapshot) => {
-        const data = snapshot.val();
-        porteros = data ? Object.values(data) : [];
-        refreshCurrentView();
-    });
-
-    const edpsRef = ref(db, 'edps');
-    onValue(edpsRef, (snapshot) => {
-        const data = snapshot.val();
-        edps = data ? Object.values(data) : [];
-        refreshCurrentView();
-    });
-
-    checkSession();
-});
-
-/* ================= SESIÓN ================= */
-function checkSession() {
-    const session = JSON.parse(localStorage.getItem('guardianes_session'));
-    if (session) {
-        roleType = session.role;
-        setTimeout(() => {
-            if (roleType === 'admin') {
-                navTo('view-admin');
-            } else if (roleType === 'edp') {
-                currentUser = edps.find(e => e.id == session.id);
-                if (currentUser) navTo('view-edp');
-            } else if (roleType === 'portero') {
-                currentUser = porteros.find(p => p.id == session.id);
-                if (currentUser) navTo('view-portero');
-            }
-        }, 1000);
-    }
-}
-
-function refreshCurrentView() {
-    const currentView = document.querySelector('section[style*="block"]');
-    if (!currentView) return;
-    
-    if (currentView.id === 'view-admin') {
-        renderAdminList(); renderEDPListAdmin(); cargarSelectEDP();
-    } else if (currentView.id === 'view-edp' && currentUser) {
-        renderEvaluacionList();
-    } else if (currentView.id === 'view-portero' && currentUser) {
-        currentUser = porteros.find(p => p.id === currentUser.id);
-        if(currentUser) renderDashboard(currentUser.id);
-    } else if (currentView.id === 'view-ranking') {
-        renderRankingList();
-    }
-}
+/* ================= FUNCIONES ================= */
 
 function abrirLogin(role) { 
     roleType = role; 
@@ -132,7 +41,6 @@ function cerrarModal() { document.getElementById('modal-login').style.display = 
 function confirmarLogin() {
     const pass = document.getElementById('modal-pass').value;
     if(!pass) return;
-    
     let success = false;
     let sessionData = null;
 
@@ -173,6 +81,34 @@ function logout() {
     location.reload(); 
 }
 
+function toggleTheme() {
+    const current = document.body.getAttribute('data-theme');
+    const newTheme = current === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+    if(currentUser && document.getElementById('view-portero').style.display === 'block') {
+        renderRadar(currentUser);
+    }
+}
+
+function updateThemeIcon(theme) { 
+    const btn = document.getElementById('btn-theme');
+    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
+}
+
+function togglePasswordVisibility() {
+    const input = document.getElementById('modal-pass');
+    const icon = document.querySelector('.toggle-password');
+    if (input.type === 'password') { 
+        input.type = 'text'; 
+        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
+    } else { 
+        input.type = 'password'; 
+        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
+    }
+}
+
 function navTo(viewId) {
     document.querySelectorAll('main section').forEach(s => s.style.display = 'none');
     document.getElementById(viewId).style.display = 'block';
@@ -189,7 +125,23 @@ function navTo(viewId) {
     refreshCurrentView();
 }
 
-/* ================= ADMIN ================= */
+function navPortero(tab) {
+    document.getElementById('view-portero').style.display = tab === 'home' ? 'block' : 'none';
+    document.getElementById('view-ranking').style.display = tab === 'ranking' ? 'block' : 'none';
+    
+    const btnHome = document.getElementById('nav-btn-home');
+    const btnRank = document.getElementById('nav-btn-rank');
+    
+    if(tab === 'home') {
+        btnHome.classList.add('active');
+        btnRank.classList.remove('active');
+    } else {
+        btnHome.classList.remove('active');
+        btnRank.classList.add('active');
+        renderRankingList();
+    }
+}
+
 function procesarImagenSegura(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -241,7 +193,7 @@ function guardarPortero() {
 
     set(ref(db, 'porteros/' + nuevoId), datos)
         .then(() => { alert("Guardado"); limpiarFormAdmin(); })
-        .catch((e) => alert("Error: " + e.message));
+        .catch((e) => alert("Error Firebase: " + e.message));
 }
 
 function crearEDP() {
@@ -330,7 +282,6 @@ function cargarSelectEDP() {
     if(select) { select.innerHTML = '<option value="">Asignar EDP...</option>' + edps.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join(''); }
 }
 
-/* ================= EDP ================= */
 function renderEvaluacionList() {
     const div = document.getElementById('edp-lista-porteros');
     const misPorteros = porteros.filter(p => p.entrenador === currentUser.nombre);
@@ -351,7 +302,6 @@ function renderEvaluacionList() {
             </div>
             <div class="points-container">
                 <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
-                
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Puntual', 'fa-clock')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Escucha', 'fa-ear-listen')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
@@ -359,7 +309,6 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Ayuda', 'fa-handshake')"><i class="fas fa-handshake"></i><span>+2</span>Ayuda</button>
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 1, 'men', 'Espíritu', 'fa-fire')"><i class="fas fa-fire"></i><span>+1</span>Espíritu</button>
                 </div></div>
-
                 <div class="category-block"><div class="category-header cat-tec"><i class="fas fa-mitten"></i> TÉCNICA</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 1, 'tec', 'Blocaje', 'fa-hand-rock')"><i class="fas fa-hand-rock"></i><span>+1</span>Blocaje</button>
                     <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 1, 'tec', 'Caída', 'fa-arrow-down')"><i class="fas fa-arrow-down"></i><span>+1</span>Caída</button>
@@ -367,7 +316,6 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 2, 'tec', 'Reflejo', 'fa-bolt')"><i class="fas fa-bolt"></i><span>+2</span>Reflejo</button>
                     <button class="btn-modern-score btn-tec" onclick="window.sumar(${p.id}, 3, 'tec', 'TOP', 'fa-star')"><i class="fas fa-star"></i><span>+3</span>TOP</button>
                 </div></div>
-
                 <div class="category-block"><div class="category-header cat-jue"><i class="fas fa-running"></i> JUEGO</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 2, 'jue', '1vs1', 'fa-shield-alt')"><i class="fas fa-shield-alt"></i><span>+2</span>1vs1</button>
                     <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 2, 'jue', 'Salida', 'fa-rocket')"><i class="fas fa-rocket"></i><span>+2</span>Salida</button>
@@ -375,25 +323,17 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 1, 'jue', 'Voz', 'fa-bullhorn')"><i class="fas fa-bullhorn"></i><span>+1</span>Voz</button>
                     <button class="btn-modern-score btn-jue" onclick="window.sumar(${p.id}, 1, 'jue', 'Posición', 'fa-map-marker-alt')"><i class="fas fa-map-marker-alt"></i><span>+1</span>Posición</button>
                 </div></div>
-
                 <div class="category-block"><div class="category-header cat-ret"><i class="fas fa-trophy"></i> RETOS</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 4, 'ret', 'Reto', 'fa-check-circle')"><i class="fas fa-check-circle"></i><span>+4</span>Reto</button>
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 6, 'ret', 'Perfecto', 'fa-fire-alt')"><i class="fas fa-fire-alt"></i><span>+6</span>Perfect</button>
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'Mejora', 'fa-chart-line')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'MVP', 'fa-medal')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
                 </div></div>
-
                 <div class="category-block" style="border:none;">
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
                         ${p.historial && p.historial.length > 0 
-                            ? p.historial.slice(0, 5).map(h => `
-                                <div class="history-item">
-                                    <span class="hist-date">${h.fecha.split(' ')[1]}</span>
-                                    <span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span>
-                                    <span class="hist-action">${h.accion}</span>
-                                    <span class="hist-pts" style="color:${getColor(h.categoria)}">+${h.puntos}</span>
-                                </div>`).join('') 
+                            ? p.historial.slice(0, 5).map(h => `<div class="history-item"><span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span><span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span><span class="hist-action">${h.accion}</span><span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span></div>`).join('') 
                             : '<div style="text-align:center;font-size:0.75rem;color:var(--text-sec);">Sin actividad.</div>'}
                     </div>
                 </div>
@@ -401,7 +341,6 @@ function renderEvaluacionList() {
         </div>`).join('');
 }
 
-function getColor(cat) { if(cat==='men') return 'var(--col-men)'; if(cat==='tec') return 'var(--col-tec)'; if(cat==='jue') return 'var(--col-jue)'; return 'var(--col-ret)'; }
 function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
 
 function sumar(id, pts, statKey, accionNombre, iconClass) {
@@ -412,8 +351,6 @@ function sumar(id, pts, statKey, accionNombre, iconClass) {
     
     let hist = p.historial || [];
     const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-    
-    // Guardamos el icono también
     hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey, icon: iconClass });
     if(hist.length > 20) hist.pop();
 
@@ -427,19 +364,20 @@ function sumar(id, pts, statKey, accionNombre, iconClass) {
 function guardarFeedback(id) {
     const input = document.getElementById(`feedback-input-${id}`);
     if(!input || !input.value) return;
+    // CORRECCIÓN: Guardar el mensaje en la BD
     update(ref(db, 'porteros/' + id), { mensajeManual: input.value }).then(() => { alert("Mensaje Enviado"); input.value = ""; });
 }
 
-/* ================= MODULO PORTERO ================= */
 function renderDashboard(porteroId) {
     const p = porteros.find(x => x.id === porteroId);
     if(!p) return;
+    
     let s = p.stats || {};
     let needsUpdate = false;
-    if (typeof s.men !== 'number') { s.men = 60; needsUpdate = true; }
-    if (typeof s.tec !== 'number') { s.tec = 60; needsUpdate = true; }
-    if (typeof s.jue !== 'number') { s.jue = s.fis || 60; needsUpdate = true; }
-    if (typeof s.ret !== 'number') { s.ret = s.tac || 60; needsUpdate = true; }
+    if (typeof s.men !== 'number' || isNaN(s.men)) { s.men = 60; needsUpdate = true; }
+    if (typeof s.tec !== 'number' || isNaN(s.tec)) { s.tec = 60; needsUpdate = true; }
+    if (typeof s.jue !== 'number' || isNaN(s.jue)) { s.jue = 60; needsUpdate = true; }
+    if (typeof s.ret !== 'number' || isNaN(s.ret)) { s.ret = 60; needsUpdate = true; }
     if (needsUpdate) { update(ref(db, 'porteros/' + p.id), { stats: s }); }
 
     document.getElementById('dash-card-nombre').innerText = p.nombre; 
@@ -464,7 +402,7 @@ function renderDashboard(porteroId) {
     document.getElementById('progress-fill').style.width = Math.min(w, 100) + "%";
     document.getElementById('progress-fill').style.background = lvlColor;
     
-    // LOGICA INSIGNIAS (MURO)
+    // BADGES LOGIC
     const badges = [
         { name: "Primeros Pasos", limit: 30, icon: "shoe-prints" }, { name: "Manos Seguras", limit: 80, icon: "hand-paper" },
         { name: "Reflejos Felinos", limit: 120, icon: "bolt" }, { name: "Colocación", limit: 150, icon: "compass" },
@@ -473,16 +411,9 @@ function renderDashboard(porteroId) {
         { name: "Muro Diamante", limit: 500, icon: "gem" }, { name: "Comunicador", limit: 600, icon: "bullhorn" },
         { name: "Leyenda", limit: 900, icon: "star" }, { name: "Reto Superado", limit: 9999, icon: "check-circle" }
     ];
-    
     document.getElementById('insignias-container').innerHTML = badges.map(b => {
         const isUnlocked = p.puntos >= b.limit;
-        return `
-        <div class="insignia-item">
-            <div class="insignia-box ${isUnlocked ? 'unlocked' : 'locked'}">
-                <i class="fas fa-${b.icon}"></i>
-            </div>
-            <div class="insignia-name">${b.name}</div>
-        </div>`;
+        return `<div class="insignia-item"><div class="insignia-box ${isUnlocked ? 'unlocked' : 'locked'}"><i class="fas fa-${b.icon}"></i></div><div class="insignia-name">${b.name}</div></div>`;
     }).join('');
     
     renderRadar(p);
@@ -520,12 +451,10 @@ function renderRankingList() {
     const div = document.getElementById('ranking-list-container');
     const smartDiv = document.getElementById('smart-rankings');
     let lista = [...porteros];
-    
-    // FILTRO EXACTO (TRIM)
+    // CORRECCIÓN FILTRO TRIM
     if(window.rankingMode && window.rankingMode !== 'global') {
         lista = lista.filter(p => p.sede && p.sede.trim() === window.rankingMode);
     }
-    
     lista.sort((a,b) => b.puntos - a.puntos);
     const bestMen = [...lista].sort((a,b) => (b.stats?.men||0) - (a.stats?.men||0))[0];
     const bestTec = [...lista].sort((a,b) => (b.stats?.tec||0) - (a.stats?.tec||0))[0];
@@ -544,3 +473,23 @@ function renderRankingList() {
 }
 function togglePasswordVisibility() { const i = document.getElementById('modal-pass'); i.type = i.type==='password'?'text':'password'; }
 function updateThemeIcon(t) { document.getElementById('btn-theme').innerHTML = t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; }
+
+/* ================= EXPOSICIÓN FINAL ================= */
+window.abrirLogin = abrirLogin;
+window.cerrarModal = cerrarModal;
+window.confirmarLogin = confirmarLogin;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+window.navPortero = navPortero;
+window.toggleRanking = toggleRanking;
+window.procesarImagenSegura = procesarImagenSegura;
+window.guardarPortero = guardarPortero;
+window.limpiarFormAdmin = limpiarFormAdmin;
+window.editarPortero = editarPortero;
+window.borrarPortero = borrarPortero;
+window.borrarEDP = borrarEDP;
+window.crearEDP = crearEDP;
+window.toggleCard = toggleCard;
+window.sumar = sumar;
+window.guardarFeedback = guardarFeedback;
+window.togglePasswordVisibility = togglePasswordVisibility;
