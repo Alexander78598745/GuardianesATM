@@ -48,7 +48,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--input-border); font-size: 0.75rem; }
 .history-item:last-child { border-bottom: none; }
 .hist-date { color: var(--text-sec); font-size: 0.65rem; width: 60px; }
-.hist-icon { width: 25px; text-align: center; margin-right: 8px; font-size: 1rem; }
+.hist-icon { width: 30px; text-align: center; font-size: 1rem; margin-right: 5px; }
 .hist-action { font-weight: bold; flex: 1; text-align: left; }
 .hist-pts { font-weight: 800; }
 
@@ -59,6 +59,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 .input-label { font-size: 0.75rem; color: var(--text-sec); font-weight: bold; margin-bottom: 5px; display: block; text-transform: uppercase; }
 
 .ranking-card-style { display: flex; align-items: center; background: var(--bg-card); padding: 12px 15px; border-radius: 16px; margin: 0 auto 10px auto; width: 95%; max-width: 350px; border: 1px solid var(--card-border); position: relative; overflow: hidden; transition: transform 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.ranking-card-style:hover { transform: scale(1.02); }
 .mini-foto-list, .rank-avatar { width: 50px !important; height: 50px !important; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid var(--atm-red); margin-right: 12px; }
 .rank-pos { font-weight: 900; font-size: 1.1rem; width: 30px; text-align: center; margin-right: 10px; color: var(--text-sec); }
 .rank-info { flex: 1; min-width: 0; }

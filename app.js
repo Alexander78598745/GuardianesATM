@@ -1,6 +1,8 @@
+/* ================= IMPORTACIONES FIREBASE ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+/* ================= CONFIGURACIÓN ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyCcS3t28TaeqvaklYS0hlUNupFNRkBN8Bo",
   authDomain: "guardianes-atm.firebaseapp.com",
@@ -11,17 +13,111 @@ const firebaseConfig = {
   appId: "1:561012664887:web:54fa7726e9dcc84ba0edb2"
 };
 
+// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+/* ================= VARIABLES GLOBALES ================= */
 let porteros = [];
 let edps = [];
 let currentUser = null; 
 let roleType = ""; 
 let fotoTemp = ""; 
+let chartInstance = null; 
+let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= FUNCIONES ================= */
+/* ================= FUNCIONES A window (SOLUCIÓN DEFINITIVA) ================= */
+window.abrirLogin = abrirLogin;
+window.cerrarModal = cerrarModal;
+window.confirmarLogin = confirmarLogin;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+window.navPortero = navPortero;
+window.toggleRanking = toggleRanking;
+window.procesarImagenSegura = procesarImagenSegura;
+window.guardarPortero = guardarPortero;
+window.limpiarFormAdmin = limpiarFormAdmin;
+window.editarPortero = editarPortero;
+window.borrarPortero = borrarPortero;
+window.borrarEDP = borrarEDP;
+window.crearEDP = crearEDP;
+window.toggleCard = toggleCard;
+window.sumar = sumar;
+window.guardarFeedback = guardarFeedback;
+window.togglePasswordVisibility = togglePasswordVisibility;
+
+/* ================= INICIO ================= */
+document.addEventListener('DOMContentLoaded', () => {
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+    
+    // ENTER PARA LOGIN
+    const passInput = document.getElementById('modal-pass');
+    if(passInput) {
+        passInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                confirmarLogin();
+            }
+        });
+    }
+
+    // CARGA DE DATOS EN TIEMPO REAL
+    const porterosRef = ref(db, 'porteros');
+    onValue(porterosRef, (snapshot) => {
+        const data = snapshot.val();
+        porteros = data ? Object.values(data) : [];
+        refreshCurrentView();
+    });
+
+    const edpsRef = ref(db, 'edps');
+    onValue(edpsRef, (snapshot) => {
+        const data = snapshot.val();
+        edps = data ? Object.values(data) : [];
+        refreshCurrentView();
+    });
+
+    checkSession();
+});
+
+/* ================= SESIÓN ================= */
+function checkSession() {
+    const session = JSON.parse(localStorage.getItem('guardianes_session'));
+    if (session) {
+        roleType = session.role;
+        setTimeout(() => {
+            if (roleType === 'admin') {
+                navTo('view-admin');
+            } else if (roleType === 'edp') {
+                currentUser = edps.find(e => e.id == session.id);
+                if (currentUser) navTo('view-edp');
+            } else if (roleType === 'portero') {
+                currentUser = porteros.find(p => p.id == session.id);
+                if (currentUser) navTo('view-portero');
+            }
+        }, 1000);
+    }
+}
+
+function refreshCurrentView() {
+    const currentView = document.querySelector('section[style*="block"]');
+    if (!currentView) return;
+    
+    if (currentView.id === 'view-admin') {
+        renderAdminList(); renderEDPListAdmin(); cargarSelectEDP();
+    } else if (currentView.id === 'view-edp' && currentUser) {
+        renderEvaluacionList();
+    } else if (currentView.id === 'view-portero' && currentUser) {
+        currentUser = porteros.find(p => p.id === currentUser.id);
+        if(currentUser) renderDashboard(currentUser.id);
+    } else if (currentView.id === 'view-ranking') {
+        renderRankingList();
+    }
+}
 
 function abrirLogin(role) { 
     roleType = role; 
@@ -36,6 +132,7 @@ function cerrarModal() { document.getElementById('modal-login').style.display = 
 function confirmarLogin() {
     const pass = document.getElementById('modal-pass').value;
     if(!pass) return;
+    
     let success = false;
     let sessionData = null;
 
@@ -74,34 +171,6 @@ function confirmarLogin() {
 function logout() { 
     localStorage.removeItem('guardianes_session');
     location.reload(); 
-}
-
-function toggleTheme() {
-    const current = document.body.getAttribute('data-theme');
-    const newTheme = current === 'dark' ? 'light' : 'dark';
-    document.body.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
-    if(currentUser && document.getElementById('view-portero').style.display === 'block') {
-        renderRadar(currentUser);
-    }
-}
-
-function updateThemeIcon(theme) { 
-    const btn = document.getElementById('btn-theme');
-    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
-}
-
-function togglePasswordVisibility() {
-    const input = document.getElementById('modal-pass');
-    const icon = document.querySelector('.toggle-password');
-    if (input.type === 'password') { 
-        input.type = 'text'; 
-        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
-    } else { 
-        input.type = 'password'; 
-        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
-    }
 }
 
 function navTo(viewId) {
@@ -296,7 +365,7 @@ function renderEvaluacionList() {
                 <i class="fas fa-chevron-down" style="color:var(--text-sec)"></i>
             </div>
             <div class="points-container">
-                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
+                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Puntual', 'fa-clock')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Escucha', 'fa-ear-listen')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
@@ -324,6 +393,7 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'Mejora', 'fa-chart-line')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'MVP', 'fa-medal')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
                 </div></div>
+                
                 <div class="category-block" style="border:none;">
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
