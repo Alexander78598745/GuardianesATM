@@ -1,8 +1,6 @@
-/* ================= IMPORTACIONES FIREBASE ================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-/* ================= CONFIGURACIÓN ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyCcS3t28TaeqvaklYS0hlUNupFNRkBN8Bo",
   authDomain: "guardianes-atm.firebaseapp.com",
@@ -16,14 +14,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* ================= VARIABLES ================= */
 let porteros = [];
 let edps = [];
 let currentUser = null; 
 let roleType = ""; 
 let fotoTemp = ""; 
-let chartInstance = null; 
-let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
 /* ================= FUNCIONES ================= */
@@ -202,7 +197,7 @@ function crearEDP() {
     if(!nombre || !clave) return alert("Faltan datos");
     
     const existe = edps.find(e => e.nombre.trim().toLowerCase() === nombre.trim().toLowerCase());
-    if(existe) return alert("Ya existe este entrenador");
+    if(existe) return alert("Ya existe");
 
     const id = Date.now();
     set(ref(db, 'edps/' + id), { id, nombre, clave })
@@ -301,7 +296,7 @@ function renderEvaluacionList() {
                 <i class="fas fa-chevron-down" style="color:var(--text-sec)"></i>
             </div>
             <div class="points-container">
-                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
+                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Puntual', 'fa-clock')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Escucha', 'fa-ear-listen')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
@@ -364,7 +359,6 @@ function sumar(id, pts, statKey, accionNombre, iconClass) {
 function guardarFeedback(id) {
     const input = document.getElementById(`feedback-input-${id}`);
     if(!input || !input.value) return;
-    // CORRECCIÓN: Guardar el mensaje en la BD
     update(ref(db, 'porteros/' + id), { mensajeManual: input.value }).then(() => { alert("Mensaje Enviado"); input.value = ""; });
 }
 
