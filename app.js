@@ -26,6 +26,43 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
+/* ================= INICIO (DOM) ================= */
+document.addEventListener('DOMContentLoaded', () => {
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+    
+    // ENTER PARA LOGIN
+    const passInput = document.getElementById('modal-pass');
+    if(passInput) {
+        passInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                confirmarLogin();
+            }
+        });
+    }
+
+    // CARGA DE DATOS FIREBASE
+    const porterosRef = ref(db, 'porteros');
+    onValue(porterosRef, (snapshot) => {
+        const data = snapshot.val();
+        porteros = data ? Object.values(data) : [];
+        refreshCurrentView();
+    });
+
+    const edpsRef = ref(db, 'edps');
+    onValue(edpsRef, (snapshot) => {
+        const data = snapshot.val();
+        edps = data ? Object.values(data) : [];
+        refreshCurrentView();
+    });
+
+    checkSession();
+});
+
 /* ================= FUNCIONES ================= */
 
 function abrirLogin(role) { 
@@ -203,7 +240,7 @@ function crearEDP() {
     
     const existe = edps.find(e => e.nombre.toLowerCase() === nombre.toLowerCase());
     if(existe) {
-        return alert("¡Ese entrenador ya existe! Bórralo si está duplicado.");
+        return alert("¡Ese entrenador ya existe!");
     }
     
     const id = Date.now();
@@ -335,13 +372,7 @@ function renderEvaluacionList() {
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
                         ${p.historial && p.historial.length > 0 
-                            ? p.historial.slice(0, 5).map(h => `
-                                <div class="history-item">
-                                    <span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span>
-                                    <span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span>
-                                    <span class="hist-action">${h.accion}</span>
-                                    <span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span>
-                                </div>`).join('') 
+                            ? p.historial.slice(0, 5).map(h => `<div class="history-item"><span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span><span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span><span class="hist-action">${h.accion}</span><span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span></div>`).join('') 
                             : '<div style="text-align:center;font-size:0.75rem;color:var(--text-sec);">Sin actividad.</div>'}
                     </div>
                 </div>
@@ -482,6 +513,7 @@ function togglePasswordVisibility() { const i = document.getElementById('modal-p
 function updateThemeIcon(t) { document.getElementById('btn-theme').innerHTML = t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; }
 
 /* ================= EXPOSICIÓN FINAL ================= */
+// ESTA ES LA CLAVE PARA QUE FUNCIONE ONLINE
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;
