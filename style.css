@@ -93,7 +93,6 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
     overflow: hidden; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     margin: 0 auto 15px auto;
-    /* Corrección ancho tarjetas en PC/Tablet */
     max-width: 700px;
 }
 .card-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; }
@@ -146,13 +145,66 @@ input[type="file"] { display: none; }
 .fifa-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-weight: 600; font-size: 0.9rem; }
 .fifa-stats-grid span { color: #f1c40f; font-weight: 800; margin-right: 5px; }
 
-/* GRID DE INSIGNIAS */
-.insignias-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 10px 0; }
-.insignia-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.insignia-box { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: all 0.3s; border: 2px solid transparent; }
-.insignia-box.locked { background: rgba(128,128,128,0.1); color: var(--text-sec); filter: grayscale(1); opacity: 0.5; }
-.insignia-box.unlocked { background: linear-gradient(135deg, #FFD700, #FDB931); color: #111; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3); border: 1px solid #fff; transform: scale(1.05); animation: popIn 0.5s ease-out; }
-.insignia-name { font-size: 0.55rem; text-align: center; color: var(--text-sec); font-weight: 700; text-transform: uppercase; }
+/* NUEVOS ESTILOS DEL MURO DE TROFEOS */
+.trophy-section { text-align: left; padding: 0; }
+.trophy-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 2px; color: var(--text-main); }
+.trophy-subtitle { font-size: 0.85rem; color: var(--text-sec); font-style: italic; margin-bottom: 25px; }
+
+/* Contenedor flexible para los círculos */
+.trophy-list { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+    justify-content: center; /* Centrados en móvil, o flex-start si prefieres alineado a izq */
+}
+
+/* Items individuales */
+.trophy-item { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 8px; 
+    width: 80px; 
+}
+
+/* CÍRCULOS */
+.trophy-circle {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s;
+}
+
+/* Estado BLOQUEADO: Gris, discontinuo */
+.trophy-circle.locked {
+    border: 2px dashed #777; /* Gris discontinuo */
+    color: #777; /* Icono gris */
+    background: transparent;
+    opacity: 0.6;
+}
+
+/* Estado DESBLOQUEADO: Rojo sólido */
+.trophy-circle.unlocked {
+    border: 2px solid var(--atm-red); /* Rojo sólido */
+    color: var(--atm-red); /* Icono rojo */
+    background: rgba(203, 53, 36, 0.05); /* Fondo rojo muy suave */
+    box-shadow: 0 0 10px rgba(203, 53, 36, 0.2);
+    animation: popIn 0.5s ease-out;
+}
+
+.trophy-name {
+    font-size: 0.6rem;
+    text-align: center;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1.1;
+}
+
+/* Texto gris si bloqueado, rojo/blanco si desbloqueado */
+.trophy-item.locked .trophy-name { color: var(--text-sec); opacity: 0.7; }
+.trophy-item.unlocked .trophy-name { color: var(--atm-red); }
+
 @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
 .level-grid-system { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; text-align: center; }

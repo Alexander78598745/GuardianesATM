@@ -49,14 +49,11 @@ window.guardarFeedback = function(id) {
     const inputId = `feedback-input-${id}`;
     const input = document.getElementById(inputId);
     
-    if (!input) {
-        console.error("Error: No se encuentra el input con ID " + inputId);
-        return;
-    }
+    if (!input) return;
 
     const msg = input.value;
     if (!msg.trim()) {
-        alert("Por favor, escribe un mensaje antes de enviar.");
+        alert("Por favor, escribe un mensaje.");
         return;
     }
 
@@ -64,10 +61,9 @@ window.guardarFeedback = function(id) {
     update(ref(db, 'porteros/' + id), { mensajeManual: msg })
         .then(() => {
             showToast("Mensaje enviado correctamente");
-            input.value = ""; // Limpiar input
+            input.value = ""; 
         })
         .catch((error) => {
-            console.error("Error al enviar:", error);
             alert("Error al enviar mensaje: " + error.message);
         });
 };
@@ -465,18 +461,31 @@ function renderDashboard(porteroId) {
     const percent = Math.min(100, (p.puntos / 1000) * 100);
     document.getElementById('progress-fill').style.width = percent + "%";
 
+    // --- NUEVO RENDERIZADO DEL MURO (FLEX + CÍRCULOS) ---
     const container = document.getElementById('insignias-container');
-    container.innerHTML = BADGES.map(b => {
+    
+    // Generar la estructura completa (Título + Subtítulo + Lista Flex)
+    let html = `
+        <div class="trophy-section">
+            <div class="trophy-title">Muro de Trofeos</div>
+            <div class="trophy-subtitle">Colecciona las insignias que definen tu legado.</div>
+            <div class="trophy-list">
+    `;
+
+    html += BADGES.map(b => {
         const unlocked = p.puntos >= b.limit;
         return `
-            <div class="insignia-item">
-                <div class="insignia-box ${unlocked ? 'unlocked' : 'locked'}">
+            <div class="trophy-item ${unlocked ? 'unlocked' : 'locked'}">
+                <div class="trophy-circle ${unlocked ? 'unlocked' : 'locked'}">
                     <i class="fas fa-${b.icon}"></i>
                 </div>
-                <div class="insignia-name">${b.name}</div>
+                <div class="trophy-name">${b.name}</div>
             </div>
         `;
     }).join('');
+
+    html += `</div></div>`; // Cerrar divs
+    container.innerHTML = html;
 
     renderRadar(p);
 }
