@@ -13,6 +13,7 @@ const firebaseConfig = {
   appId: "1:561012664887:web:54fa7726e9dcc84ba0edb2"
 };
 
+// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -22,9 +23,83 @@ let edps = [];
 let currentUser = null; 
 let roleType = ""; 
 let fotoTemp = ""; 
+let chartInstance = null; 
+let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= FUNCIONES DEL SISTEMA (DEFINICIÓN) ================= */
+/* ================= INICIO ================= */
+document.addEventListener('DOMContentLoaded', () => {
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+    
+    // ENTER PARA LOGIN
+    const passInput = document.getElementById('modal-pass');
+    if(passInput) {
+        passInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                confirmarLogin();
+            }
+        });
+    }
+
+    // CARGA DE DATOS
+    const porterosRef = ref(db, 'porteros');
+    onValue(porterosRef, (snapshot) => {
+        const data = snapshot.val();
+        porteros = data ? Object.values(data) : [];
+        refreshCurrentView();
+    });
+
+    const edpsRef = ref(db, 'edps');
+    onValue(edpsRef, (snapshot) => {
+        const data = snapshot.val();
+        edps = data ? Object.values(data) : [];
+        refreshCurrentView();
+    });
+
+    checkSession();
+});
+
+/* ================= FUNCIONES LÓGICAS ================= */
+
+// DEFINIMOS TODAS LAS FUNCIONES PRIMERO
+function checkSession() {
+    const session = JSON.parse(localStorage.getItem('guardianes_session'));
+    if (session) {
+        roleType = session.role;
+        setTimeout(() => {
+            if (roleType === 'admin') {
+                navTo('view-admin');
+            } else if (roleType === 'edp') {
+                currentUser = edps.find(e => e.id == session.id);
+                if (currentUser) navTo('view-edp');
+            } else if (roleType === 'portero') {
+                currentUser = porteros.find(p => p.id == session.id);
+                if (currentUser) navTo('view-portero');
+            }
+        }, 1000);
+    }
+}
+
+function refreshCurrentView() {
+    const currentView = document.querySelector('section[style*="block"]');
+    if (!currentView) return;
+    
+    if (currentView.id === 'view-admin') {
+        renderAdminList(); renderEDPListAdmin(); cargarSelectEDP();
+    } else if (currentView.id === 'view-edp' && currentUser) {
+        renderEvaluacionList();
+    } else if (currentView.id === 'view-portero' && currentUser) {
+        currentUser = porteros.find(p => p.id === currentUser.id);
+        if(currentUser) renderDashboard(currentUser.id);
+    } else if (currentView.id === 'view-ranking') {
+        renderRankingList();
+    }
+}
 
 function abrirLogin(role) { 
     roleType = role; 
@@ -34,9 +109,7 @@ function abrirLogin(role) {
     setTimeout(() => passInput.focus(), 100); 
 }
 
-function cerrarModal() { 
-    document.getElementById('modal-login').style.display = 'none'; 
-}
+function cerrarModal() { document.getElementById('modal-login').style.display = 'none'; }
 
 function confirmarLogin() {
     const pass = document.getElementById('modal-pass').value;
@@ -77,41 +150,9 @@ function confirmarLogin() {
     }
 }
 
-function confirmingLogin() {
-    confirmarLogin();
-}
-
 function logout() { 
     localStorage.removeItem('guardianes_session');
     location.reload(); 
-}
-
-function toggleTheme() {
-    const current = document.body.getAttribute('data-theme');
-    const newTheme = current === 'dark' ? 'light' : 'dark';
-    document.body.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
-    if(currentUser && document.getElementById('view-portero').style.display === 'block') {
-        renderRadar(currentUser);
-    }
-}
-
-function updateThemeIcon(theme) { 
-    const btn = document.getElementById('btn-theme');
-    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
-}
-
-function togglePasswordVisibility() {
-    const input = document.getElementById('modal-pass');
-    const icon = document.querySelector('.toggle-password');
-    if (input.type === 'password') { 
-        input.type = 'text'; 
-        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
-    } else { 
-        input.type = 'password'; 
-        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
-    }
 }
 
 function navTo(viewId) {
@@ -129,25 +170,6 @@ function navTo(viewId) {
     if(viewId === 'view-admin') limpiarFormAdmin();
     refreshCurrentView();
 }
-
-function navPortero(tab) {
-    document.getElementById('view-portero').style.display = tab === 'home' ? 'block' : 'none';
-    document.getElementById('view-ranking').style.display = tab === 'ranking' ? 'block' : 'none';
-    
-    const btnHome = document.getElementById('nav-btn-home');
-    const btnRank = document.getElementById('nav-btn-rank');
-    
-    if(tab === 'home') {
-        btnHome.classList.add('active');
-        btnRank.classList.remove('active');
-    } else {
-        btnHome.classList.remove('active');
-        btnRank.classList.add('active');
-        renderRankingList();
-    }
-}
-
-/* ================= LÓGICA DE DATOS ================= */
 
 function procesarImagenSegura(event) {
     const file = event.target.files[0];
@@ -199,12 +221,8 @@ function guardarPortero() {
     };
 
     set(ref(db, 'porteros/' + nuevoId), datos)
-        .then(() => { 
-            // Crear toast manual simple para evitar dependencia de función externa si falla
-            alert("Guardado correctamente");
-            limpiarFormAdmin(); 
-        })
-        .catch((e) => alert("Error Firebase: " + e.message));
+        .then(() => { alert("Guardado"); limpiarFormAdmin(); })
+        .catch((e) => alert("Error: " + e.message));
 }
 
 function crearEDP() {
@@ -227,7 +245,6 @@ function borrarPortero(id) {
 
 function limpiarFormAdmin() {
     document.querySelectorAll('#view-admin input').forEach(i => i.value = "");
-    // Imagen base64 placeholder segura
     document.getElementById('fotoPreview').src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJQXSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCI+Rk9UTzwvdGV4dD48L3N2Zz4=";
     document.getElementById('reg-id').value = "";
     fotoTemp = "";
@@ -248,49 +265,6 @@ function editarPortero(id) {
     if(p.foto) { document.getElementById('fotoPreview').src = p.foto; fotoTemp = p.foto; }
     document.querySelector('.modern-card').scrollIntoView({behavior: 'smooth'});
 }
-
-function toggleCard(id) {
-    const card = document.getElementById(`card-${id}`);
-    if(card) card.classList.toggle('expanded');
-}
-
-function sumar(id, pts, statKey, accionNombre) {
-    const p = porteros.find(x => x.id === id);
-    if (!p) return;
-    let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
-    if(s[statKey] === undefined) s[statKey] = 60;
-    
-    let hist = p.historial || [];
-    const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-    hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
-    if(hist.length > 20) hist.pop();
-
-    update(ref(db, 'porteros/' + id), { 
-        puntos: (p.puntos || 0) + pts, 
-        stats: { ...s, [statKey]: s[statKey] + pts },
-        historial: hist 
-    }); 
-    // Quitamos showToast externo para asegurar que no falle, usamos alert simple si falla algo visual, pero la logica va.
-}
-
-function guardarFeedback(id) {
-    const input = document.getElementById(`feedback-input-${id}`);
-    if(!input || !input.value) return;
-    update(ref(db, 'porteros/' + id), { mensajeManual: input.value })
-    .then(() => { input.value = ""; });
-}
-
-function toggleRanking(mode) { 
-    // Definir variable global
-    window.rankingMode = mode; 
-    document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
-    if(mode === 'global') document.getElementById('rank-global').classList.add('active');
-    else if(mode === 'CD Alcalá') document.getElementById('rank-alcala').classList.add('active');
-    else if(mode === 'Cotorruelo') document.getElementById('rank-cotorruelo').classList.add('active');
-    renderRankingList(); 
-}
-
-/* ================= RENDERIZADORES ================= */
 
 function renderAdminList() { 
     const container = document.getElementById('admin-lista-porteros');
@@ -346,7 +320,7 @@ function renderEvaluacionList() {
                 <i class="fas fa-chevron-down" style="color:var(--text-sec)"></i>
             </div>
             <div class="points-container">
-                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
+                <div class="category-block"><div class="chat-input-container"><input type="text" id="feedback-input-${p.id}" class="chat-input" placeholder="Escribir mensaje..."><button class="btn-chat-send" onclick="window.guardarFeedback(${p.id})"><i class="fas fa-paper-plane"></i></button></div></div>
                 <div class="category-block"><div class="category-header cat-men"><i class="fas fa-brain"></i> ACTITUD</div><div class="points-grid-modern">
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Puntual')"><i class="fas fa-clock"></i><span>+2</span>Puntual</button>
                     <button class="btn-modern-score btn-men" onclick="window.sumar(${p.id}, 2, 'men', 'Escucha')"><i class="fas fa-ear-listen"></i><span>+2</span>Escucha</button>
@@ -384,6 +358,32 @@ function renderEvaluacionList() {
                 </div>
             </div>
         </div>`).join('');
+}
+
+function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
+
+function sumar(id, pts, statKey, accionNombre) {
+    const p = porteros.find(x => x.id === id);
+    if (!p) return;
+    let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
+    if(s[statKey] === undefined) s[statKey] = 60;
+    
+    let hist = p.historial || [];
+    const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+    hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
+    if(hist.length > 20) hist.pop();
+
+    update(ref(db, 'porteros/' + id), { 
+        puntos: (p.puntos || 0) + pts, 
+        stats: { ...s, [statKey]: s[statKey] + pts },
+        historial: hist 
+    }).then(() => alert(`+${pts} ${accionNombre}`));
+}
+
+function guardarFeedback(id) {
+    const input = document.getElementById(`feedback-input-${id}`);
+    if(!input.value) return;
+    update(ref(db, 'porteros/' + id), { mensajeManual: input.value }).then(() => { alert("Mensaje Enviado"); input.value = ""; });
 }
 
 function renderDashboard(porteroId) {
@@ -453,40 +453,13 @@ function renderRankingList() {
         </div>
     `).join('');
 }
+function togglePasswordVisibility() { const i = document.getElementById('modal-pass'); i.type = i.type==='password'?'text':'password'; }
+function updateThemeIcon(t) { document.getElementById('btn-theme').innerHTML = t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; }
 
-function checkSession() {
-    const session = JSON.parse(localStorage.getItem('guardianes_session'));
-    if (session) {
-        roleType = session.role;
-        setTimeout(() => {
-            if (roleType === 'admin') {
-                navTo('view-admin');
-            } else if (roleType === 'edp') {
-                currentUser = edps.find(e => e.id == session.id);
-                if (currentUser) navTo('view-edp');
-            } else if (roleType === 'portero') {
-                currentUser = porteros.find(p => p.id == session.id);
-                if (currentUser) navTo('view-portero');
-            }
-        }, 800);
-    }
-}
-
-function refreshCurrentView() {
-    const currentView = document.querySelector('section[style*="block"]');
-    if (!currentView) return;
-    if (currentView.id === 'view-admin') { renderAdminList(); renderEDPListAdmin(); cargarSelectEDP(); }
-    else if (currentView.id === 'view-edp' && currentUser) { renderEvaluacionList(); }
-    else if (currentView.id === 'view-portero' && currentUser) { currentUser = porteros.find(p => p.id === currentUser.id); if(currentUser) renderDashboard(currentUser.id); }
-    else if (currentView.id === 'view-ranking') { renderRankingList(); }
-}
-
-/* ================= EXPOSICIÓN FINAL (AQUÍ ESTÁ EL ARREGLO) ================= */
-// Vinculamos todas las funciones al objeto global window para que el HTML pueda verlas
+/* --- BLOQUE DE CONEXIÓN DEFINITIVA CON HTML --- */
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;
-window.confirmingLogin = confirmingLogin;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
 window.navPortero = navPortero;
