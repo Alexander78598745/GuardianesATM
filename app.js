@@ -13,10 +13,11 @@ const firebaseConfig = {
   appId: "1:561012664887:web:54fa7726e9dcc84ba0edb2"
 };
 
+// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* ================= VARIABLES ================= */
+/* ================= VARIABLES GLOBALES ================= */
 let porteros = [];
 let edps = [];
 let currentUser = null; 
@@ -26,7 +27,27 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= INICIO (DOM) ================= */
+/* ================= FUNCIONES A window (SOLUCIÓN DEFINITIVA) ================= */
+window.abrirLogin = abrirLogin;
+window.cerrarModal = cerrarModal;
+window.confirmarLogin = confirmarLogin;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+window.navPortero = navPortero;
+window.toggleRanking = toggleRanking;
+window.procesarImagenSegura = procesarImagenSegura;
+window.guardarPortero = guardarPortero;
+window.limpiarFormAdmin = limpiarFormAdmin;
+window.editarPortero = editarPortero;
+window.borrarPortero = borrarPortero;
+window.borrarEDP = borrarEDP;
+window.crearEDP = crearEDP;
+window.toggleCard = toggleCard;
+window.sumar = sumar;
+window.guardarFeedback = guardarFeedback;
+window.togglePasswordVisibility = togglePasswordVisibility;
+
+/* ================= INICIO ================= */
 document.addEventListener('DOMContentLoaded', () => {
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }
 
@@ -45,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // CARGA DE DATOS FIREBASE
+    // CARGA DE DATOS EN TIEMPO REAL
     const porterosRef = ref(db, 'porteros');
     onValue(porterosRef, (snapshot) => {
         const data = snapshot.val();
@@ -63,7 +84,40 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSession();
 });
 
-/* ================= FUNCIONES ================= */
+/* ================= SESIÓN ================= */
+function checkSession() {
+    const session = JSON.parse(localStorage.getItem('guardianes_session'));
+    if (session) {
+        roleType = session.role;
+        setTimeout(() => {
+            if (roleType === 'admin') {
+                navTo('view-admin');
+            } else if (roleType === 'edp') {
+                currentUser = edps.find(e => e.id == session.id);
+                if (currentUser) navTo('view-edp');
+            } else if (roleType === 'portero') {
+                currentUser = porteros.find(p => p.id == session.id);
+                if (currentUser) navTo('view-portero');
+            }
+        }, 1000);
+    }
+}
+
+function refreshCurrentView() {
+    const currentView = document.querySelector('section[style*="block"]');
+    if (!currentView) return;
+    
+    if (currentView.id === 'view-admin') {
+        renderAdminList(); renderEDPListAdmin(); cargarSelectEDP();
+    } else if (currentView.id === 'view-edp' && currentUser) {
+        renderEvaluacionList();
+    } else if (currentView.id === 'view-portero' && currentUser) {
+        currentUser = porteros.find(p => p.id === currentUser.id);
+        if(currentUser) renderDashboard(currentUser.id);
+    } else if (currentView.id === 'view-ranking') {
+        renderRankingList();
+    }
+}
 
 function abrirLogin(role) { 
     roleType = role; 
@@ -78,6 +132,7 @@ function cerrarModal() { document.getElementById('modal-login').style.display = 
 function confirmarLogin() {
     const pass = document.getElementById('modal-pass').value;
     if(!pass) return;
+    
     let success = false;
     let sessionData = null;
 
@@ -116,34 +171,6 @@ function confirmarLogin() {
 function logout() { 
     localStorage.removeItem('guardianes_session');
     location.reload(); 
-}
-
-function toggleTheme() {
-    const current = document.body.getAttribute('data-theme');
-    const newTheme = current === 'dark' ? 'light' : 'dark';
-    document.body.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
-    if(currentUser && document.getElementById('view-portero').style.display === 'block') {
-        renderRadar(currentUser);
-    }
-}
-
-function updateThemeIcon(theme) { 
-    const btn = document.getElementById('btn-theme');
-    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
-}
-
-function togglePasswordVisibility() {
-    const input = document.getElementById('modal-pass');
-    const icon = document.querySelector('.toggle-password');
-    if (input.type === 'password') { 
-        input.type = 'text'; 
-        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
-    } else { 
-        input.type = 'password'; 
-        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
-    }
 }
 
 function navTo(viewId) {
@@ -240,7 +267,7 @@ function crearEDP() {
     
     const existe = edps.find(e => e.nombre.toLowerCase() === nombre.toLowerCase());
     if(existe) {
-        return alert("¡Ese entrenador ya existe!");
+        return alert("¡Ese entrenador ya existe! Bórralo si está duplicado.");
     }
     
     const id = Date.now();
@@ -372,7 +399,13 @@ function renderEvaluacionList() {
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
                         ${p.historial && p.historial.length > 0 
-                            ? p.historial.slice(0, 5).map(h => `<div class="history-item"><span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span><span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span><span class="hist-action">${h.accion}</span><span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span></div>`).join('') 
+                            ? p.historial.slice(0, 5).map(h => `
+                                <div class="history-item">
+                                    <span class="hist-date">${h.fecha.split(' ')[1]}</span>
+                                    <span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span>
+                                    <span class="hist-action">${h.accion}</span>
+                                    <span class="hist-pts" style="color:${getColor(h.categoria)}">+${h.puntos}</span>
+                                </div>`).join('') 
                             : '<div style="text-align:center;font-size:0.75rem;color:var(--text-sec);">Sin actividad.</div>'}
                     </div>
                 </div>
@@ -380,6 +413,7 @@ function renderEvaluacionList() {
         </div>`).join('');
 }
 
+function getColor(cat) { if(cat==='men') return 'var(--col-men)'; if(cat==='tec') return 'var(--col-tec)'; if(cat==='jue') return 'var(--col-jue)'; return 'var(--col-ret)'; }
 function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
 
 function sumar(id, pts, statKey, accionNombre, iconClass) {
@@ -513,7 +547,6 @@ function togglePasswordVisibility() { const i = document.getElementById('modal-p
 function updateThemeIcon(t) { document.getElementById('btn-theme').innerHTML = t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; }
 
 /* ================= EXPOSICIÓN FINAL ================= */
-// ESTA ES LA CLAVE PARA QUE FUNCIONE ONLINE
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;

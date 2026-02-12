@@ -88,7 +88,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
     border-left: 4px solid var(--atm-red); 
     overflow: hidden; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-    width: 98%; max-width: 600px; /* LIMITADO */
+    width: 98%; max-width: 600px; /* LIMITADO PARA PC/TABLET */
 }
 .card-header-flex { display: flex; justify-content: space-between; align-items: center; padding: 15px; cursor: pointer; }
 .profile-flex { display: flex; align-items: center; gap: 15px; width: 100%; }

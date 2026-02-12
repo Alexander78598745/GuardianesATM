@@ -62,23 +62,32 @@
         <section id="view-admin" style="display:none;">
             <div class="modern-card">
                 <div class="section-header"><h2>Gestión Porteros</h2><span class="badge">Alta</span></div>
+                
                 <div class="profile-upload-container" onclick="document.getElementById('fileInput').click()">
                     <img id="fotoPreview" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJQXSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCI+Rk9UTzwvdGV4dD48L3N2Zz4=" style="width:100%; height:100%; object-fit:cover; border-radius:50%; border:3px solid var(--atm-red);">
                     <div class="upload-badge"><i class="fas fa-camera"></i></div>
                 </div>
                 <input type="file" id="fileInput" accept="image/*" onchange="window.procesarImagenSegura(event)" style="display:none;">
+
                 <input type="hidden" id="reg-id">
                 
                 <div class="form-grid">
-                    <div class="form-full"><label class="input-label">Nombre Completo</label><input type="text" id="reg-nombre" placeholder="Nombre y Apellidos"></div>
+                    <div class="form-full">
+                        <label class="input-label">Nombre Completo</label>
+                        <input type="text" id="reg-nombre" placeholder="Nombre y Apellidos">
+                    </div>
                     <div><label class="input-label">Equipo</label><input type="text" id="reg-equipo" placeholder="Ej: Alevín A"></div>
                     <div><label class="input-label">Año Nac.</label><input type="number" id="reg-ano" placeholder="Ej: 2012"></div>
-                    <div><label class="input-label">Sede</label><select id="reg-sede"><option value="" disabled selected>Selecciona...</option><option value="CD Alcalá">CD Alcalá</option><option value="Cotorruelo">Cotorruelo</option></select></div>
+                    <div>
+                        <label class="input-label">Sede</label>
+                        <select id="reg-sede"><option value="" disabled selected>Selecciona...</option><option value="CD Alcalá">CD Alcalá</option><option value="Cotorruelo">Cotorruelo</option></select>
+                    </div>
                     <div><label class="input-label">Entrenador</label><select id="reg-entrenador-select"><option value="">Asignar EDP...</option></select></div>
                     <div><label class="input-label">Pierna</label><select id="reg-pierna"><option value="">Selecciona...</option><option>Derecha</option><option>Izquierda</option></select></div>
                     <div><label class="input-label">Mano</label><select id="reg-mano"><option value="">Selecciona...</option><option>Derecha</option><option>Izquierda</option></select></div>
                     <div class="form-full"><label class="input-label">Contraseña Acceso</label><input type="text" id="reg-clave" placeholder="Clave personal"></div>
                 </div>
+
                 <div class="row" style="margin-top:15px;">
                     <button class="btn-secondary" onclick="window.limpiarFormAdmin()">LIMPIAR</button>
                     <button class="btn-main" onclick="window.guardarPortero()" style="margin-top:0;">GUARDAR</button>
