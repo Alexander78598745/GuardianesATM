@@ -34,11 +34,21 @@ header { background: linear-gradient(180deg, var(--atm-blue) 0%, rgba(17,26,54,0
 .header-text .highlight { color: var(--atm-red); }
 .btn-logout-clean { background: none; border: none; color: var(--atm-red); font-size: 1.6rem; cursor: pointer; }
 
-/* PASSWORD FIX */
+/* PASSWORD FIX - CORREGIDO Z-INDEX */
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 .password-wrapper { position: relative; width: 100%; margin-bottom: 15px; }
 .pass-input { width: 100%; text-align: center; letter-spacing: 5px; font-size: 1.5rem; padding: 12px 40px 12px 12px; background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: var(--text-main); }
-.toggle-password { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-sec); font-size: 1.2rem; }
+.toggle-password { 
+    position: absolute; 
+    right: 15px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    cursor: pointer; 
+    color: var(--text-sec); 
+    font-size: 1.2rem; 
+    z-index: 10; /* Asegura que esté por encima del input */
+    padding: 5px; /* Aumenta área de clic */
+}
 .toggle-password:hover { color: var(--atm-red); }
 
 /* TOAST */
@@ -58,6 +68,28 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
 
 /* TITULOS */
 .section-divider, .section-divider-center { text-align: center; color: var(--atm-red); font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin: 30px 0 15px 0; font-size: 1.1rem; border-bottom: 2px solid rgba(203, 53, 36, 0.2); padding-bottom: 5px; }
+
+/* ESTILOS HEADER EDP CENTRADO */
+.edp-header-styled {
+    text-align: center;
+    margin-bottom: 25px;
+}
+.edp-title-main {
+    color: var(--atm-red);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+}
+.edp-subtitle-main {
+    color: var(--atm-red);
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
 
 /* FORM GRID ADMIN */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -145,66 +177,18 @@ input[type="file"] { display: none; }
 .fifa-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-weight: 600; font-size: 0.9rem; }
 .fifa-stats-grid span { color: #f1c40f; font-weight: 800; margin-right: 5px; }
 
-/* NUEVOS ESTILOS DEL MURO DE TROFEOS */
+/* GRID DE INSIGNIAS */
 .trophy-section { text-align: left; padding: 0; }
 .trophy-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 2px; color: var(--text-main); }
 .trophy-subtitle { font-size: 0.85rem; color: var(--text-sec); font-style: italic; margin-bottom: 25px; }
-
-/* Contenedor flexible para los círculos */
-.trophy-list { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 15px; 
-    justify-content: center; /* Centrados en móvil, o flex-start si prefieres alineado a izq */
-}
-
-/* Items individuales */
-.trophy-item { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 8px; 
-    width: 80px; 
-}
-
-/* CÍRCULOS */
-.trophy-circle {
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem;
-    transition: all 0.3s;
-}
-
-/* Estado BLOQUEADO: Gris, discontinuo */
-.trophy-circle.locked {
-    border: 2px dashed #777; /* Gris discontinuo */
-    color: #777; /* Icono gris */
-    background: transparent;
-    opacity: 0.6;
-}
-
-/* Estado DESBLOQUEADO: Rojo sólido */
-.trophy-circle.unlocked {
-    border: 2px solid var(--atm-red); /* Rojo sólido */
-    color: var(--atm-red); /* Icono rojo */
-    background: rgba(203, 53, 36, 0.05); /* Fondo rojo muy suave */
-    box-shadow: 0 0 10px rgba(203, 53, 36, 0.2);
-    animation: popIn 0.5s ease-out;
-}
-
-.trophy-name {
-    font-size: 0.6rem;
-    text-align: center;
-    font-weight: 700;
-    text-transform: uppercase;
-    line-height: 1.1;
-}
-
-/* Texto gris si bloqueado, rojo/blanco si desbloqueado */
+.trophy-list { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+.trophy-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 80px; }
+.trophy-circle { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: all 0.3s; }
+.trophy-circle.locked { border: 2px dashed #777; color: #777; background: transparent; opacity: 0.6; }
+.trophy-circle.unlocked { border: 2px solid var(--atm-red); color: var(--atm-red); background: rgba(203, 53, 36, 0.05); box-shadow: 0 0 10px rgba(203, 53, 36, 0.2); animation: popIn 0.5s ease-out; }
+.trophy-name { font-size: 0.6rem; text-align: center; font-weight: 700; text-transform: uppercase; line-height: 1.1; }
 .trophy-item.locked .trophy-name { color: var(--text-sec); opacity: 0.7; }
 .trophy-item.unlocked .trophy-name { color: var(--atm-red); }
-
 @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
 .level-grid-system { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; text-align: center; }

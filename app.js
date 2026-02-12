@@ -294,10 +294,12 @@ window.togglePasswordVisibility = function() {
     const icon = document.querySelector('.toggle-password');
     if (input.type === 'password') { 
         input.type = 'text'; 
-        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
     } else { 
         input.type = 'password'; 
-        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
     }
 };
 
@@ -461,10 +463,9 @@ function renderDashboard(porteroId) {
     const percent = Math.min(100, (p.puntos / 1000) * 100);
     document.getElementById('progress-fill').style.width = percent + "%";
 
-    // --- NUEVO RENDERIZADO DEL MURO (FLEX + CÍRCULOS) ---
     const container = document.getElementById('insignias-container');
     
-    // Generar la estructura completa (Título + Subtítulo + Lista Flex)
+    // RENDERIZADO DEL MURO
     let html = `
         <div class="trophy-section">
             <div class="trophy-title">Muro de Trofeos</div>
@@ -484,7 +485,7 @@ function renderDashboard(porteroId) {
         `;
     }).join('');
 
-    html += `</div></div>`; // Cerrar divs
+    html += `</div></div>`;
     container.innerHTML = html;
 
     renderRadar(p);
