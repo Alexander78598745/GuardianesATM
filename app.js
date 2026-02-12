@@ -27,7 +27,7 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-/* ================= FUNCIONES A window (SOLUCIÓN DEFINITIVA) ================= */
+/* ================= EXPOSICIÓN DE FUNCIONES A HTML ================= */
 window.abrirLogin = abrirLogin;
 window.cerrarModal = cerrarModal;
 window.confirmarLogin = confirmarLogin;
@@ -266,7 +266,7 @@ function crearEDP() {
     if(!nombre || !clave) return alert("Faltan datos");
     
     const existe = edps.find(e => e.nombre.trim().toLowerCase() === nombre.trim().toLowerCase());
-    if(existe) return alert("Ya existe");
+    if(existe) return alert("Ya existe este entrenador");
 
     const id = Date.now();
     set(ref(db, 'edps/' + id), { id, nombre, clave })
@@ -341,11 +341,6 @@ function renderEDPListAdmin() {
         </div>`).join(''); 
 }
 
-function cargarSelectEDP() {
-    const select = document.getElementById('reg-entrenador-select');
-    if(select) { select.innerHTML = '<option value="">Asignar EDP...</option>' + edps.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join(''); }
-}
-
 function renderEvaluacionList() {
     const div = document.getElementById('edp-lista-porteros');
     const misPorteros = porteros.filter(p => p.entrenador === currentUser.nombre);
@@ -393,18 +388,11 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'Mejora', 'fa-chart-line')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'MVP', 'fa-medal')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
                 </div></div>
-                
                 <div class="category-block" style="border:none;">
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
                         ${p.historial && p.historial.length > 0 
-                            ? p.historial.slice(0, 5).map(h => `
-                                <div class="history-item">
-                                    <span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span>
-                                    <span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span>
-                                    <span class="hist-action">${h.accion}</span>
-                                    <span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span>
-                                </div>`).join('') 
+                            ? p.historial.slice(0, 5).map(h => `<div class="history-item"><span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span><span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span><span class="hist-action">${h.accion}</span><span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span></div>`).join('') 
                             : '<div style="text-align:center;font-size:0.75rem;color:var(--text-sec);">Sin actividad.</div>'}
                     </div>
                 </div>
