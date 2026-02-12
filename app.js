@@ -398,7 +398,13 @@ function renderEvaluacionList() {
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
                         ${p.historial && p.historial.length > 0 
-                            ? p.historial.slice(0, 5).map(h => `<div class="history-item"><span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span><span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span><span class="hist-action">${h.accion}</span><span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span></div>`).join('') 
+                            ? p.historial.slice(0, 5).map(h => `
+                                <div class="history-item">
+                                    <span class="hist-date">${h.fecha.split(' ')[1] || h.fecha}</span>
+                                    <span class="hist-icon" style="color:${getColor(h.categoria)}"><i class="fas ${h.icon}"></i></span>
+                                    <span class="hist-action">${h.accion}</span>
+                                    <span class="hist-pts" style="color:var(--atm-red)">+${h.puntos}</span>
+                                </div>`).join('') 
                             : '<div style="text-align:center;font-size:0.75rem;color:var(--text-sec);">Sin actividad.</div>'}
                     </div>
                 </div>
