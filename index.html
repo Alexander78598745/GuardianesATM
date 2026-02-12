@@ -24,11 +24,11 @@
             <h3 id="modal-title" style="color:var(--atm-red); margin-bottom:15px;">ACCESO</h3>
             <div class="password-wrapper">
                 <input type="password" id="modal-pass" placeholder="****" class="pass-input">
-                <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility()"></i>
+                <i class="fas fa-eye toggle-password" onclick="window.togglePasswordVisibility()"></i>
             </div>
             <div class="row">
-                <button class="btn-secondary" onclick="cerrarModal()">CANCELAR</button>
-                <button class="btn-main" onclick="confirmarLogin()" style="margin-top:0;">ENTRAR</button>
+                <button class="btn-secondary" onclick="window.cerrarModal()">CANCELAR</button>
+                <button class="btn-main" onclick="window.confirmarLogin()" style="margin-top:0;">ENTRAR</button>
             </div>
         </div>
     </div>
@@ -42,8 +42,8 @@
             </div>
         </div>
         <div style="display:flex; gap:15px; align-items:center;">
-            <button id="btn-theme" class="btn-logout-clean" onclick="toggleTheme()"><i class="fas fa-sun"></i></button>
-            <button id="btn-logout" class="btn-logout-clean" onclick="logout()" style="display:none;"><i class="fas fa-power-off"></i></button>
+            <button id="btn-theme" class="btn-logout-clean" onclick="window.toggleTheme()"><i class="fas fa-sun"></i></button>
+            <button id="btn-logout" class="btn-logout-clean" onclick="window.logout()" style="display:none;"><i class="fas fa-power-off"></i></button>
         </div>
     </header>
 
@@ -52,9 +52,9 @@
             <div class="login-container-width" style="text-align:center; margin-top:40px;">
                 <h2 style="font-weight:800; text-transform:uppercase; color:var(--text-main);">Selecciona Perfil</h2>
                 <div class="login-grid">
-                    <div class="login-card" onclick="abrirLogin('portero')"><div class="icon-circle"><i class="fas fa-mitten"></i></div><h3>PORTERO</h3></div>
-                    <div class="login-card" onclick="abrirLogin('edp')"><div class="icon-circle"><i class="fas fa-stopwatch"></i></div><h3>EDP</h3></div>
-                    <div class="login-card" onclick="abrirLogin('admin')"><div class="icon-circle"><i class="fas fa-shield-alt"></i></div><h3>ADMIN</h3></div>
+                    <div class="login-card" onclick="window.abrirLogin('portero')"><div class="icon-circle"><i class="fas fa-mitten"></i></div><h3>PORTERO</h3></div>
+                    <div class="login-card" onclick="window.abrirLogin('edp')"><div class="icon-circle"><i class="fas fa-stopwatch"></i></div><h3>EDP</h3></div>
+                    <div class="login-card" onclick="window.abrirLogin('admin')"><div class="icon-circle"><i class="fas fa-shield-alt"></i></div><h3>ADMIN</h3></div>
                 </div>
             </div>
         </section>
@@ -67,7 +67,7 @@
                     <img id="fotoPreview" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJQXSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCI+Rk9UTzwvdGV4dD48L3N2Zz4=" style="width:100%; height:100%; object-fit:cover; border-radius:50%; border:3px solid var(--atm-red);">
                     <div class="upload-badge"><i class="fas fa-camera"></i></div>
                 </div>
-                <input type="file" id="fileInput" accept="image/*" onchange="procesarImagenSegura(event)" style="display:none;">
+                <input type="file" id="fileInput" accept="image/*" onchange="window.procesarImagenSegura(event)" style="display:none;">
 
                 <input type="hidden" id="reg-id">
                 
@@ -89,8 +89,8 @@
                 </div>
 
                 <div class="row" style="margin-top:15px;">
-                    <button class="btn-secondary" onclick="limpiarFormAdmin()">LIMPIAR</button>
-                    <button class="btn-main" onclick="guardarPortero()" style="margin-top:0;">GUARDAR</button>
+                    <button class="btn-secondary" onclick="window.limpiarFormAdmin()">LIMPIAR</button>
+                    <button class="btn-main" onclick="window.guardarPortero()" style="margin-top:0;">GUARDAR</button>
                 </div>
             </div>
             
@@ -100,7 +100,7 @@
                     <input type="text" id="edp-nombre" placeholder="Nombre EDP">
                     <input type="text" id="edp-clave" placeholder="Clave EDP">
                 </div>
-                <button class="btn-main bg-val" onclick="crearEDP()" style="color:black; margin-top:10px;">Crear Entrenador</button>
+                <button class="btn-main bg-val" onclick="window.crearEDP()" style="color:black; margin-top:10px;">Crear Entrenador</button>
             </div>
 
             <div class="section-divider">PORTEROS REGISTRADOS</div>
@@ -183,9 +183,9 @@
                 <i class="fas fa-trophy" style="color:#FFD700; font-size:2rem; margin-bottom:10px;"></i>
                 <h2 style="margin-bottom:15px;">CLASIFICACIÓN</h2>
                 <div class="ios-segmented-control">
-                    <button class="segment-btn active" id="rank-global" onclick="toggleRanking('global')"><i class="fas fa-globe"></i> Global</button>
-                    <button class="segment-btn" id="rank-alcala" onclick="toggleRanking('CD Alcalá')"><i class="fas fa-map-marker-alt"></i> Alcalá</button>
-                    <button class="segment-btn" id="rank-cotorruelo" onclick="toggleRanking('Cotorruelo')"><i class="fas fa-map-pin"></i> Cotorruelo</button>
+                    <button class="segment-btn active" id="rank-global" onclick="window.toggleRanking('global')"><i class="fas fa-globe"></i> Global</button>
+                    <button class="segment-btn" id="rank-alcala" onclick="window.toggleRanking('CD Alcalá')"><i class="fas fa-map-marker-alt"></i> Alcalá</button>
+                    <button class="segment-btn" id="rank-cotorruelo" onclick="window.toggleRanking('Cotorruelo')"><i class="fas fa-map-pin"></i> Cotorruelo</button>
                 </div>
             </div>
 
@@ -196,8 +196,8 @@
     </main>
 
     <nav class="floating-nav" id="nav-portero" style="display:none;">
-        <button onclick="navPortero('home')" class="active" id="nav-btn-home"><i class="fas fa-user"></i> Perfil</button>
-        <button onclick="navPortero('ranking')" id="nav-btn-rank"><i class="fas fa-list-ol"></i> Ranking</button>
+        <button onclick="window.navPortero('home')" class="active" id="nav-btn-home"><i class="fas fa-user"></i> Perfil</button>
+        <button onclick="window.navPortero('ranking')" id="nav-btn-rank"><i class="fas fa-list-ol"></i> Ranking</button>
     </nav>
 
     <script type="module" src="app.js"></script>
