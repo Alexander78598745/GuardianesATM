@@ -26,7 +26,7 @@ let chartInstance = null;
 let rankingMode = "global";
 const FRASES_MOTIVACIONALES = ["Confía en tu talento.", "Seguridad y mando.", "Portería a cero es el objetivo.", "El trabajo vence al talento.", "Hoy serás un muro."];
 
-// LISTA DE 12 INSIGNIAS SOLICITADA
+// LISTA DE 12 INSIGNIAS
 const BADGES = [
     { name: "Primeros Pasos", limit: 30, icon: "shoe-prints" }, 
     { name: "Manos Seguras", limit: 80, icon: "hand-paper" },
@@ -42,19 +42,47 @@ const BADGES = [
     { name: "Reto Superado", limit: 1000, icon: "check-circle" }
 ];
 
-/* ================= FUNCIONES ================= */
+/* ================= FUNCIONES GLOBALES (Window) ================= */
 
-function abrirLogin(role) { 
+// Función corregida para enviar mensaje
+window.guardarFeedback = function(id) {
+    const inputId = `feedback-input-${id}`;
+    const input = document.getElementById(inputId);
+    
+    if (!input) {
+        console.error("Error: No se encuentra el input con ID " + inputId);
+        return;
+    }
+
+    const msg = input.value;
+    if (!msg.trim()) {
+        alert("Por favor, escribe un mensaje antes de enviar.");
+        return;
+    }
+
+    // Actualizar en Firebase
+    update(ref(db, 'porteros/' + id), { mensajeManual: msg })
+        .then(() => {
+            showToast("Mensaje enviado correctamente");
+            input.value = ""; // Limpiar input
+        })
+        .catch((error) => {
+            console.error("Error al enviar:", error);
+            alert("Error al enviar mensaje: " + error.message);
+        });
+};
+
+window.abrirLogin = function(role) { 
     roleType = role; 
     document.getElementById('modal-login').style.display = 'flex'; 
     const passInput = document.getElementById('modal-pass');
     passInput.value = ''; 
     setTimeout(() => passInput.focus(), 100); 
-}
+};
 
-function cerrarModal() { document.getElementById('modal-login').style.display = 'none'; }
+window.cerrarModal = function() { document.getElementById('modal-login').style.display = 'none'; };
 
-function confirmarLogin() {
+window.confirmarLogin = function() {
     const pass = document.getElementById('modal-pass').value;
     if(!pass) return;
     let success = false;
@@ -90,14 +118,14 @@ function confirmarLogin() {
     } else {
         alert("Clave incorrecta o datos cargando...");
     }
-}
+};
 
-function logout() { 
+window.logout = function() { 
     localStorage.removeItem('guardianes_session');
     location.reload(); 
-}
+};
 
-function toggleTheme() {
+window.toggleTheme = function() {
     const current = document.body.getAttribute('data-theme');
     const newTheme = current === 'dark' ? 'light' : 'dark';
     document.body.setAttribute('data-theme', newTheme);
@@ -106,42 +134,9 @@ function toggleTheme() {
     if(currentUser && document.getElementById('view-portero').style.display === 'block') {
         renderRadar(currentUser);
     }
-}
+};
 
-function updateThemeIcon(theme) { 
-    const btn = document.getElementById('btn-theme');
-    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
-}
-
-function togglePasswordVisibility() {
-    const input = document.getElementById('modal-pass');
-    const icon = document.querySelector('.toggle-password');
-    if (input.type === 'password') { 
-        input.type = 'text'; 
-        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
-    } else { 
-        input.type = 'password'; 
-        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
-    }
-}
-
-function navTo(viewId) {
-    document.querySelectorAll('main section').forEach(s => s.style.display = 'none');
-    document.getElementById(viewId).style.display = 'block';
-    document.getElementById('btn-logout').style.display = 'block';
-    
-    const navBar = document.getElementById('nav-portero');
-    if(viewId === 'view-portero' || viewId === 'view-ranking') {
-        if(roleType === 'portero') navBar.style.display = 'flex';
-    } else {
-        navBar.style.display = 'none';
-    }
-
-    if(viewId === 'view-admin') limpiarFormAdmin();
-    refreshCurrentView();
-}
-
-function navPortero(tab) {
+window.navPortero = function(tab) {
     document.getElementById('view-portero').style.display = tab === 'home' ? 'block' : 'none';
     document.getElementById('view-ranking').style.display = tab === 'ranking' ? 'block' : 'none';
     
@@ -156,9 +151,18 @@ function navPortero(tab) {
         btnRank.classList.add('active');
         renderRankingList();
     }
-}
+};
 
-function procesarImagenSegura(event) {
+window.toggleRanking = function(mode) { 
+    rankingMode = mode; 
+    document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active')); 
+    if(mode === 'global') document.getElementById('rank-global').classList.add('active'); 
+    else if(mode === 'CD Alcalá') document.getElementById('rank-alcala').classList.add('active'); 
+    else if(mode === 'Cotorruelo') document.getElementById('rank-cotorruelo').classList.add('active'); 
+    renderRankingList(); 
+};
+
+window.procesarImagenSegura = function(event) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -177,9 +181,9 @@ function procesarImagenSegura(event) {
         }
     }
     reader.readAsDataURL(file);
-}
+};
 
-function guardarPortero() {
+window.guardarPortero = function() {
     const idEdit = document.getElementById('reg-id').value; 
     const nombre = document.getElementById('reg-nombre').value; 
     const clave = document.getElementById('reg-clave').value;
@@ -210,18 +214,15 @@ function guardarPortero() {
     set(ref(db, 'porteros/' + nuevoId), datos)
         .then(() => { alert("Guardado"); limpiarFormAdmin(); })
         .catch((e) => alert("Error Firebase: " + e.message));
-}
+};
 
-function crearEDP() {
+window.crearEDP = function() {
     const nombre = document.getElementById('edp-nombre').value;
     const clave = document.getElementById('edp-clave').value;
     if(!nombre || !clave) return alert("Faltan datos");
     
-    // COMPROBACIÓN DE DUPLICADOS
     const existe = edps.find(e => e.nombre.toLowerCase() === nombre.toLowerCase());
-    if(existe) {
-        return alert("¡Ese entrenador ya existe! Bórralo si está duplicado.");
-    }
+    if(existe) { return alert("¡Ese entrenador ya existe!"); }
     
     const id = Date.now();
     set(ref(db, 'edps/' + id), { id, nombre, clave })
@@ -230,24 +231,18 @@ function crearEDP() {
             document.getElementById('edp-nombre').value = "";
             document.getElementById('edp-clave').value = "";
         });
-}
+};
 
-function borrarPortero(id) {
-    if(confirm("¿Eliminar Portero?")) { remove(ref(db, 'porteros/' + id)); }
-}
-
-function borrarEDP(id) {
-    if(confirm("¿Eliminar Entrenador?")) { remove(ref(db, 'edps/' + id)); }
-}
-
-function limpiarFormAdmin() {
+window.borrarPortero = function(id) { if(confirm("¿Eliminar Portero?")) { remove(ref(db, 'porteros/' + id)); } };
+window.borrarEDP = function(id) { if(confirm("¿Eliminar Entrenador?")) { remove(ref(db, 'edps/' + id)); } };
+window.limpiarFormAdmin = function() {
     document.querySelectorAll('#view-admin input').forEach(i => i.value = "");
     document.getElementById('fotoPreview').src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMTUwIDE1MCI+PHJlY3Qgd2lkdGg9IjE1MCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJQXSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMCI+Rk9UTzwvdGV4dD48L3N2Zz4=";
     document.getElementById('reg-id').value = "";
     fotoTemp = "";
-}
+};
 
-function editarPortero(id) {
+window.editarPortero = function(id) {
     const p = porteros.find(x => x.id === id);
     if(!p) return;
     document.getElementById('reg-id').value = p.id;
@@ -261,6 +256,76 @@ function editarPortero(id) {
     document.getElementById('reg-mano').value = p.mano;
     if(p.foto) { document.getElementById('fotoPreview').src = p.foto; fotoTemp = p.foto; }
     document.querySelector('.modern-card').scrollIntoView({behavior: 'smooth'});
+};
+
+window.toggleCard = function(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); };
+
+window.sumar = function(id, pts, statKey, accionNombre) {
+    const p = porteros.find(x => x.id === id);
+    if (!p) return;
+    let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
+    if(s[statKey] === undefined) s[statKey] = 60;
+    
+    let hist = p.historial || [];
+    const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+    hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
+    if(hist.length > 20) hist.pop();
+    
+    const oldPts = p.puntos || 0;
+    const newPts = oldPts + pts;
+    BADGES.forEach(b => {
+        if(oldPts < b.limit && newPts >= b.limit) {
+            alert(`¡${p.nombre} ha desbloqueado: ${b.name}!`);
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#CB3524', '#ffffff', '#1C2C5B'] });
+        }
+    });
+
+    update(ref(db, 'porteros/' + id), { 
+        puntos: newPts, 
+        stats: { ...s, [statKey]: s[statKey] + pts },
+        historial: hist 
+    }).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<i class="fas fa-check-circle"></i> <span>+${pts} ${accionNombre}</span>`;
+        document.getElementById('toast-container').appendChild(toast);
+        setTimeout(() => { toast.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, 2500);
+    });
+};
+
+window.togglePasswordVisibility = function() {
+    const input = document.getElementById('modal-pass');
+    const icon = document.querySelector('.toggle-password');
+    if (input.type === 'password') { 
+        input.type = 'text'; 
+        icon.classList.replace('fa-eye', 'fa-eye-slash'); 
+    } else { 
+        input.type = 'password'; 
+        icon.classList.replace('fa-eye-slash', 'fa-eye'); 
+    }
+};
+
+/* ================= FUNCIONES INTERNAS ================= */
+
+function updateThemeIcon(theme) { 
+    const btn = document.getElementById('btn-theme');
+    if(btn) btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; 
+}
+
+function navTo(viewId) {
+    document.querySelectorAll('main section').forEach(s => s.style.display = 'none');
+    document.getElementById(viewId).style.display = 'block';
+    document.getElementById('btn-logout').style.display = 'block';
+    
+    const navBar = document.getElementById('nav-portero');
+    if(viewId === 'view-portero' || viewId === 'view-ranking') {
+        if(roleType === 'portero') navBar.style.display = 'flex';
+    } else {
+        navBar.style.display = 'none';
+    }
+
+    if(viewId === 'view-admin') window.limpiarFormAdmin();
+    refreshCurrentView();
 }
 
 function renderAdminList() { 
@@ -352,6 +417,7 @@ function renderEvaluacionList() {
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'Mejora')"><i class="fas fa-chart-line"></i><span>+2</span>Mejora</button>
                     <button class="btn-modern-score btn-ret" onclick="window.sumar(${p.id}, 2, 'ret', 'MVP')"><i class="fas fa-medal"></i><span>+2</span>MVP</button>
                 </div></div>
+
                 <div class="category-block" style="border:none;">
                     <div class="category-header">📜 Historial Reciente</div>
                     <div class="history-list">
@@ -364,40 +430,13 @@ function renderEvaluacionList() {
         </div>`).join('');
 }
 
-function toggleCard(id) { document.getElementById(`card-${id}`).classList.toggle('expanded'); }
-
-function sumar(id, pts, statKey, accionNombre) {
-    const p = porteros.find(x => x.id === id);
-    if (!p) return;
-    let s = p.stats || { men:60, tec:60, jue:60, ret:60 };
-    if(s[statKey] === undefined) s[statKey] = 60;
-    
-    let hist = p.historial || [];
-    const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) + ' ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
-    hist.unshift({ fecha, accion: accionNombre, puntos: pts, categoria: statKey });
-    if(hist.length > 20) hist.pop();
-    
-    // Check Insignias
-    const oldPts = p.puntos || 0;
-    const newPts = oldPts + pts;
-    BADGES.forEach(b => {
-        if(oldPts < b.limit && newPts >= b.limit) {
-            alert(`¡${p.nombre} ha desbloqueado: ${b.name}!`);
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#CB3524', '#ffffff', '#1C2C5B'] });
-        }
-    });
-
-    update(ref(db, 'porteros/' + id), { 
-        puntos: newPts, 
-        stats: { ...s, [statKey]: s[statKey] + pts },
-        historial: hist 
-    }).then(() => {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `<i class="fas fa-check-circle"></i> <span>+${pts} ${accionNombre}</span>`;
-        document.getElementById('toast-container').appendChild(toast);
-        setTimeout(() => { toast.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, 2500);
-    });
+function showToast(message) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<i class="fas fa-check-circle"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, 2500);
 }
 
 function renderDashboard(porteroId) {
@@ -461,12 +500,11 @@ function renderRadar(p) {
     });
 }
 
-function toggleRanking(mode) { rankingMode = mode; document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active')); if(mode === 'global') document.getElementById('rank-global').classList.add('active'); else if(mode === 'CD Alcalá') document.getElementById('rank-alcala').classList.add('active'); else if(mode === 'Cotorruelo') document.getElementById('rank-cotorruelo').classList.add('active'); renderRankingList(); }
 function renderRankingList() {
     const div = document.getElementById('ranking-list-container');
     const smartDiv = document.getElementById('smart-rankings');
     let lista = [...porteros];
-    if(window.rankingMode && window.rankingMode !== 'global') { lista = lista.filter(p => p.sede === window.rankingMode); }
+    if(rankingMode && rankingMode !== 'global') { lista = lista.filter(p => p.sede === rankingMode); }
     lista.sort((a,b) => b.puntos - a.puntos);
     const bestMen = [...lista].sort((a,b) => (b.stats?.men||0) - (a.stats?.men||0))[0];
     const bestTec = [...lista].sort((a,b) => (b.stats?.tec||0) - (a.stats?.tec||0))[0];
@@ -519,18 +557,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
     
-    // ENTER PARA LOGIN
     const passInput = document.getElementById('modal-pass');
     if(passInput) {
         passInput.addEventListener("keydown", function(event) {
             if (event.key === "Enter") {
                 event.preventDefault();
-                confirmarLogin();
+                window.confirmarLogin();
             }
         });
     }
 
-    // CARGA DE DATOS
     const porterosRef = ref(db, 'porteros');
     onValue(porterosRef, (snapshot) => {
         const data = snapshot.val();
@@ -547,24 +583,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checkSession();
 });
-
-/* ================= EXPOSICIÓN FINAL ================= */
-// ESTO ES LO QUE SOLUCIONA EL ERROR "IS NOT DEFINED"
-window.abrirLogin = abrirLogin;
-window.cerrarModal = cerrarModal;
-window.confirmarLogin = confirmarLogin;
-window.logout = logout;
-window.toggleTheme = toggleTheme;
-window.navPortero = navPortero;
-window.toggleRanking = toggleRanking;
-window.procesarImagenSegura = procesarImagenSegura;
-window.guardarPortero = guardarPortero;
-window.limpiarFormAdmin = limpiarFormAdmin;
-window.editarPortero = editarPortero;
-window.borrarPortero = borrarPortero;
-window.borrarEDP = borrarEDP;
-window.crearEDP = crearEDP;
-window.toggleCard = toggleCard;
-window.sumar = sumar;
-window.guardarFeedback = guardarFeedback;
-window.togglePasswordVisibility = togglePasswordVisibility;
